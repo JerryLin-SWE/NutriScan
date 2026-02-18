@@ -1,0 +1,180 @@
+classDiagram
+    %% UI Layer
+    class AuthActivity {
+        -emailEditText: EditText
+        -passwordEditText: EditText
+        -loginButton: Button
+        -registerButton: Button
+        +onCreate()
+        +onLoginClick()
+        +onRegisterClick()
+        -navigateToMacroInput()
+    }
+    
+    class MacroInputActivity {
+        -caloriesInput: EditText
+        -proteinInput: EditText
+        -carbsInput: EditText
+        -fatInput: EditText
+        -saveButton: Button
+        +onCreate()
+        +onSaveClick()
+        -navigateToMainActivity()
+    }
+    
+    class MainActivity {
+        -previewView: PreviewView
+        -startCameraButton: Button
+        -scanButton: Button
+        -resultText: TextView
+        -isCameraStarted: boolean
+        +onCreate()
+        +onStartCameraClick()
+        +onScanClick()
+        -requestCameraPermission()
+        -startCamera()
+        -captureAndScan()
+        -displayResults()
+    }
+    
+    %% Business Logic
+    class NutritionParser {
+        +parseNutritionLabel(text: String) NutritionLabel
+        -extractCalories(text: String) int
+        -extractProtein(text: String) int
+        -extractCarbs(text: String) int
+        -extractFat(text: String) int
+    }
+    
+    class DietAnalyzer {
+        +analyzeItem(nutrition: NutritionLabel, userGoals: User) FitResult
+        -calculateRemainingMacros() MacroBreakdown
+        -determineFit() boolean
+    }
+    
+    %% Data Layer
+    class FirebaseAuthManager {
+        -firebaseAuth: FirebaseAuth
+        +login(email: String, password: String) Task
+        +register(email: String, password: String) Task
+        +logout()
+        +getCurrentUser() FirebaseUser
+    }
+    
+    class FirestoreRepository {
+        -firestore: FirebaseFirestore
+        -usersCollection: CollectionReference
+        +saveUserMacros(userId: String, macros: User) Task
+        +getUserMacros(userId: String) Task~User~
+        +updateUserMacros(userId: String, macros: User) Task
+    }
+    
+    %% Models
+    class User {
+        +userId: String
+        +email: String
+        +dailyCalories: int
+        +dailyProtein: int
+        +dailyCarbs: int
+        +dailyFat: int
+    }
+    
+    class NutritionLabel {
+        +calories: int
+        +protein: int
+        +carbs: int
+        +fat: int
+        +servingSize: String
+        +rawText: String
+    }
+    
+    class FitResult {
+        +fitsInDiet: boolean
+        +remainingCalories: int
+        +remainingProtein: int
+        +remainingCarbs: int
+        +remainingFat: int
+        +message: String
+    }
+    
+    %% Third-Party Libraries - Firebase
+    class FirebaseAuth {
+        <<interface>>
+        +signInWithEmailAndPassword()
+        +createUserWithEmailAndPassword()
+        +signOut()
+    }
+    
+    class FirebaseFirestore {
+        <<interface>>
+        +collection()
+        +document()
+        +get()
+        +set()
+        +update()
+    }
+    
+    %% Third-Party Libraries - CameraX
+    class ProcessCameraProvider {
+        <<interface>>
+        +bindToLifecycle()
+        +unbindAll()
+    }
+    
+    class ImageCapture {
+        +takePicture()
+    }
+    
+    class Preview {
+        +setSurfaceProvider()
+    }
+    
+    %% Third-Party Libraries - ML Kit
+    class TextRecognizer {
+        <<interface>>
+        +process(image: InputImage) Task~Text~
+    }
+    
+    class InputImage {
+        +fromMediaImage()
+    }
+    
+    %% Relationships - UI to Business Logic
+    AuthActivity --> FirebaseAuthManager : uses
+    MacroInputActivity --> FirestoreRepository : saves to
+    MainActivity --> NutritionParser : uses
+    MainActivity --> DietAnalyzer : uses
+    MainActivity --> FirestoreRepository : retrieves from
+    
+    %% Business Logic to Models
+    NutritionParser ..> NutritionLabel : creates
+    DietAnalyzer ..> FitResult : creates
+    DietAnalyzer --> User : uses
+    DietAnalyzer --> NutritionLabel : analyzes
+    
+    %% Data Layer to Models
+    FirestoreRepository ..> User : manages
+    FirebaseAuthManager ..> User : authenticates
+    
+    %% Data Layer to Firebase
+    FirebaseAuthManager --> FirebaseAuth : delegates to
+    FirestoreRepository --> FirebaseFirestore : delegates to
+    
+    %% MainActivity to CameraX
+    MainActivity --> ProcessCameraProvider : uses
+    MainActivity --> ImageCapture : uses
+    MainActivity --> Preview : uses
+    
+    %% MainActivity to ML Kit
+    MainActivity --> TextRecognizer : uses
+    MainActivity --> InputImage : creates
+    
+    %% CameraX interactions
+    ProcessCameraProvider --> Preview : binds
+    ProcessCameraProvider --> ImageCapture : binds
+    
+    %% Notes
+    note for FirebaseAuth "Handles user authentication\n- Email/Password login\n- User registration"
+    note for FirebaseFirestore "NoSQL document database\nStores user macro goals"
+    note for TextRecognizer "ML Kit Text Recognition\nExtracts text from images"
+    note for DietAnalyzer "Core business logic:\nCompares scanned nutrition\nagainst user's daily goals"

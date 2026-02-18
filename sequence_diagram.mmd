@@ -1,0 +1,116 @@
+sequenceDiagram
+    actor User
+    participant AuthActivity
+    participant FirebaseAuth as Firebase<br/>FirebaseAuth
+    participant MacroInputActivity
+    participant FirestoreRepository
+    participant FirebaseFirestore as Firebase<br/>FirebaseFirestore
+    participant MainActivity
+    participant AndroidPermissions as System<br/>AndroidPermissions
+    participant ProcessCameraProvider as CameraX<br/>ProcessCameraProvider
+    participant ImageCapture as CameraX<br/>ImageCapture
+    participant TextRecognizer as ML Kit<br/>TextRecognizer
+    participant NutritionParser
+    participant DietAnalyzer
+
+    Note over User,AuthActivity: Authentication Flow
+    
+    User->>AuthActivity: Launch app
+    activate AuthActivity
+    User->>AuthActivity: Enter email/password<br/>Click "Login"
+    AuthActivity->>FirebaseAuth: signInWithEmailAndPassword(email, password)
+    activate FirebaseAuth
+    FirebaseAuth-->>AuthActivity: Authentication success
+    deactivate FirebaseAuth
+    AuthActivity->>MacroInputActivity: Navigate to macro input
+    deactivate AuthActivity
+    
+    Note over MacroInputActivity,FirebaseFirestore: Macro Goal Setup
+    
+    activate MacroInputActivity
+    User->>MacroInputActivity: Enter daily macros<br/>(calories, protein, carbs, fat)
+    User->>MacroInputActivity: Click "Save"
+    MacroInputActivity->>FirestoreRepository: saveUserMacros(userId, macros)
+    activate FirestoreRepository
+    FirestoreRepository->>FirebaseFirestore: collection("users").document(userId).set(macros)
+    activate FirebaseFirestore
+    FirebaseFirestore-->>FirestoreRepository: Success
+    deactivate FirebaseFirestore
+    FirestoreRepository-->>MacroInputActivity: Save complete
+    deactivate FirestoreRepository
+    MacroInputActivity->>MainActivity: Navigate to main screen
+    deactivate MacroInputActivity
+    
+    Note over MainActivity,ImageCapture: Camera Permission & Setup
+    
+    activate MainActivity
+    User->>MainActivity: Click "Start Camera"
+    MainActivity->>AndroidPermissions: checkSelfPermission(CAMERA)
+    activate AndroidPermissions
+    
+    alt Permission NOT Granted
+        AndroidPermissions-->>MainActivity: PERMISSION_DENIED
+        MainActivity->>AndroidPermissions: requestPermission(CAMERA)
+        AndroidPermissions->>User: Show permission dialog
+        User->>AndroidPermissions: Grant permission
+        AndroidPermissions-->>MainActivity: PERMISSION_GRANTED
+    else Permission Already Granted
+        AndroidPermissions-->>MainActivity: PERMISSION_GRANTED
+    end
+    deactivate AndroidPermissions
+    
+    MainActivity->>ProcessCameraProvider: getInstance(context)
+    activate ProcessCameraProvider
+    ProcessCameraProvider-->>MainActivity: CameraProvider instance
+    MainActivity->>ProcessCameraProvider: bindToLifecycle(preview, imageCapture)
+    ProcessCameraProvider->>ImageCapture: Initialize ImageCapture
+    activate ImageCapture
+    ProcessCameraProvider-->>MainActivity: Camera bound successfully
+    MainActivity-->>User: Show camera preview
+    Note right of MainActivity: Camera is now active<br/>and showing live preview
+    
+    Note over MainActivity,NutritionParser: Nutrition Label Scanning
+    
+    User->>MainActivity: Point camera at nutrition label<br/>Click "Scan Text"
+    MainActivity->>ImageCapture: takePicture()
+    ImageCapture-->>MainActivity: ImageProxy (captured frame)
+    deactivate ImageCapture
+    
+    MainActivity->>TextRecognizer: process(InputImage.fromMediaImage(imageProxy))
+    activate TextRecognizer
+    TextRecognizer-->>MainActivity: Text object (OCR text)
+    deactivate TextRecognizer
+    Note right of MainActivity: Raw text extracted:<br/>"Nutrition Facts<br/>Calories 250<br/>Protein 12g<br/>..."
+    
+    MainActivity->>NutritionParser: parseNutritionLabel(text)
+    activate NutritionParser
+    NutritionParser->>NutritionParser: extractCalories(text)
+    NutritionParser->>NutritionParser: extractProtein(text)
+    NutritionParser->>NutritionParser: extractCarbs(text)
+    NutritionParser->>NutritionParser: extractFat(text)
+    NutritionParser-->>MainActivity: NutritionLabel object
+    deactivate NutritionParser
+    Note right of MainActivity: Structured data:<br/>Calories: 250<br/>Protein: 12g<br/>Carbs: 30g<br/>Fat: 8g
+    
+    Note over MainActivity,DietAnalyzer: Diet Fit Analysis
+    
+    MainActivity->>FirestoreRepository: getUserMacros(userId)
+    activate FirestoreRepository
+    FirestoreRepository->>FirebaseFirestore: collection("users").document(userId).get()
+    activate FirebaseFirestore
+    FirebaseFirestore-->>FirestoreRepository: User document
+    deactivate FirebaseFirestore
+    FirestoreRepository-->>MainActivity: User object (daily goals)
+    deactivate FirestoreRepository
+    
+    MainActivity->>DietAnalyzer: analyzeItem(nutritionLabel, userGoals)
+    activate DietAnalyzer
+    DietAnalyzer->>DietAnalyzer: calculateRemainingMacros()
+    Note right of DietAnalyzer: Compare scanned nutrition<br/>against user's daily goals
+    DietAnalyzer->>DietAnalyzer: determineFit()
+    DietAnalyzer-->>MainActivity: FitResult<br/>(fitsInDiet: true/false,<br/>remaining macros, message)
+    deactivate DietAnalyzer
+    
+    MainActivity-->>User: Display results:<br/>"This item fits your diet!<br/>Remaining: 1500 cal, 80g protein..."
+    deactivate MainActivity
+    deactivate ProcessCameraProvider

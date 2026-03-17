@@ -1,0 +1,45 @@
+erDiagram
+    USER {
+        string userId PK
+        string email
+        int dailyCalories
+        int dailyProtein
+        int dailyCarbs
+        int dailyFat
+    }
+
+    SCAN_SESSION {
+        string sessionId PK
+        string userId FK
+        timestamp scannedAt
+        string deviceInfo
+    }
+
+    NUTRITION_LABEL {
+        string labelId PK
+        string sessionId FK
+        int calories
+        int protein
+        int carbs
+        int fat
+        string servingSize
+        string rawText
+    }
+
+    FIT_RESULT {
+        string resultId PK
+        string userId FK
+        string labelId FK
+        boolean fitsInDiet
+        int remainingCalories
+        int remainingProtein
+        int remainingCarbs
+        int remainingFat
+        string message
+    }
+
+    USER ||--o{ SCAN_SESSION : "performs"
+    SCAN_SESSION ||--|| NUTRITION_LABEL : "captures"
+    USER ||--o{ FIT_RESULT : "receives"
+    NUTRITION_LABEL ||--|| FIT_RESULT : "evaluated into"
+

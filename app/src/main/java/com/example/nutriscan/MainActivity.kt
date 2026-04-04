@@ -5,10 +5,11 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentReference
 
 class MainActivity : AppCompatActivity() {
 
-    private val TAG = "MainActivity"
+    private val tag = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,15 +19,15 @@ class MainActivity : AppCompatActivity() {
         val app = FirebaseApp.initializeApp(this)
 
         if (app == null) {
-            Log.e(TAG, "FirebaseApp initialization FAILED")
+            Log.e(tag, "FirebaseApp initialization FAILED")
             return
         } else {
-            Log.d(TAG, "FirebaseApp initialized: ${app.name}")
+            Log.d(tag, "FirebaseApp initialized: ${app.name}")
         }
 
         // 2. Get Firestore instance
         val db = FirebaseFirestore.getInstance()
-        Log.d(TAG, "Firestore instance created")
+        Log.d(tag, "Firestore instance created")
 
         // 3. Very obvious test data
         val testData = hashMapOf(
@@ -36,15 +37,15 @@ class MainActivity : AppCompatActivity() {
             "timestamp" to System.currentTimeMillis()
         )
 
-        Log.d(TAG, "Attempting Firestore add...")
+        Log.d(tag, "Attempting Firestore add...")
 
         db.collection("test")
             .add(testData)
-            .addOnSuccessListener { documentReference ->
-                Log.d(TAG, "Firestore add SUCCESS. ID = ${documentReference.id}")
+            .addOnSuccessListener { documentReference: DocumentReference ->
+                Log.d(tag, "Firestore add SUCCESS. ID = ${documentReference.id}")
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Firestore add FAILED: ${e.message}", e)
+            .addOnFailureListener { e: Exception ->
+                Log.e(tag, "Firestore add FAILED: ${e.message}", e)
             }
     }
 }

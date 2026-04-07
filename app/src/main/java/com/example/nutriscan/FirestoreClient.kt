@@ -11,9 +11,9 @@ import kotlinx.coroutines.launch
 class FirestoreClient {
     private val tag = "FirestoreClient: "
     private val db = FirebaseFirestore.getInstance()
-
     private val collection = "users"
 
+    //adds user data to database
     fun insertUser(user: User): Flow<String?> {
         return callbackFlow{
             db.collection(collection)
@@ -34,13 +34,14 @@ class FirestoreClient {
         }
     }
 
+    //updates user data in database
     fun updateUser(user: User): Flow<Boolean?> {
         return callbackFlow{
             db.collection(collection)
-                .document(user.id)
+                .document(user.userId)
                 .set(user.toHashMap())
                 .addOnSuccessListener { document ->
-                    println(tag + "update user with id: ${user.id}")
+                    println(tag + "update user with id: ${user.userId}")
                     trySend(true)
                 }
                 .addOnFailureListener { e ->
@@ -52,6 +53,7 @@ class FirestoreClient {
         }
     }
 
+    //gets user data from database
     fun getUser(email: String): Flow<User?> {
         return callbackFlow{
             db.collection(collection)
@@ -81,19 +83,23 @@ class FirestoreClient {
         }
     }
 
+    //structure for saving data to database
     private fun User.toHashMap(): HashMap<String, Any> {
         return hashMapOf(
-            "id" to id,
-            "name" to name,
+            "userId" to userId,
+            "firstName" to firstName,
+            "lastName" to lastName,
             "email" to email,
             "age" to age
         )
     }
 
+    //structure for reading from the database
     private fun Map<String, Any>.toUser(): User {
         return User(
-            id = this["id"] as String,
-            name = this["name"] as String,
+            userId = this["userId"] as String,
+            firstName = this["firstName"] as String,
+            lastName = this["lastName"] as String,
             email = this["email"] as String,
             age = (this["age"] as Long).toInt(),
         )

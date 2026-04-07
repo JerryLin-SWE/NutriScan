@@ -1,5 +1,6 @@
 package com.example.nutriscan
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,21 +15,22 @@ class FirestoreClient {
     private val collection = "users"
 
     //adds user data to database
-    fun insertUser(user: User): Flow<String?> {
-        return callbackFlow{
-            db.collection(collection)
-                .add(user.toHashMap())
+    fun insertUser(user: User): Flow<Boolean> {
+        return callbackFlow {
+            db.collection("users")
+                .document(user.userId)
+                .set(user.toHashMap())
                 .addOnSuccessListener { document ->
-                    println(tag + "insert user with id: ${document.id}")
+                    println(tag + "insert user with id: ${user.userId}")
                     CoroutineScope(Dispatchers.IO).launch {
                         updateUser(user).collect {}
                     }
-                    trySend(document.id)
+                    trySend(true)
                 }
                 .addOnFailureListener { e ->
                     e.printStackTrace()
                     println(tag + "error inserting user: $e")
-                    trySend(null)
+                    trySend(false)
                 }
             awaitClose {  }
         }
@@ -37,40 +39,39 @@ class FirestoreClient {
     //updates user data in database
     fun updateUser(user: User): Flow<Boolean?> {
         return callbackFlow{
-            db.collection(collection)
-                .document(user.userId)
-                .set(user.toHashMap())
-                .addOnSuccessListener { document ->
-                    println(tag + "update user with id: ${user.userId}")
-                    trySend(true)
-                }
-                .addOnFailureListener { e ->
-                    e.printStackTrace()
-                    println(tag + "error updating user: ${e.message}")
-                    trySend(false)
-                }
-            awaitClose {  }
+            val userId = user.userId
+            if (userId.isEmpty()) {
+                println(tag + "user id is empty")
+                trySend(false)
+            } else {
+                // Handle the case where the user isn't logged in
+                db.collection(collection)
+                    .document(userId)
+                    .set(user.toHashMap())
+                    .addOnSuccessListener { document ->
+                        println(tag + "update user with id: ${user.userId}")
+                        trySend(true)
+                    }
+                    .addOnFailureListener { e ->
+                        e.printStackTrace()
+                        println(tag + "error updating user: ${e.message}")
+                        trySend(false)
+                    }
+                awaitClose {  }
+            }
         }
     }
 
     //gets user data from database
-    fun getUser(email: String): Flow<User?> {
+    fun getUser(uid: String): Flow<User?> {
         return callbackFlow{
-            db.collection(collection)
+            db.collection("users").document(uid)
                 .get()
-                .addOnSuccessListener { result ->
-                    var user: User? = null
-                    for (document in result){
-                        if (document.data["email"] == email){
-                            user = document.data.toUser()
-                            println(tag + "user found: ${user.email}")
-                            trySend(user)
-                        }
-                    }
-                    trySend(null)
-
-                    if(user == null){
-                        println(tag + "user not found: $email")
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        trySend(document.data?.toUser())
+                    } else {
+                        println(tag + "user not found: $uid")
                         trySend(null)
                     }
                 }

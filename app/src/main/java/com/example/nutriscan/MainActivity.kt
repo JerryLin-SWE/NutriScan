@@ -12,29 +12,73 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+    //temporary auth inject data
+    private val email = "test1@gmail.com"
+    private val password = "Test123456"
+
+    //temporary user database inject data
     private var user = User(
-        name = "test",
-        email = "test",
+        firstName = "test",
+        lastName = "test",
+        email = "test1@gmail.com",
         age = 30
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //connects to auth and database
+        val authRepository = AuthRepository()
         val firestoreClient = FirestoreClient()
 
         setContentView(R.layout.activity_main)
+
+        //temporary button layout
         @Composable
         fun StyledButtons() {
+            var isLoggedIn by rememberSaveable {
+                mutableStateOf(authRepository.isLoggedIn())
+            }
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(30.dp)
             ) {
+                //register/login/logout auth buttons
+
+                if(isLoggedIn) {
+                    Button(onClick = {
+                        authRepository.logout()
+                    })
+                    { Text("Log Out") }
+                }
+
+                else {
+                    Button(onClick = {
+                        lifecycleScope.launch {
+                            isLoggedIn = authRepository.register(email, password)
+                        }
+                    })
+                    { Text("Register") }
+
+                    Button(onClick = {
+                        lifecycleScope.launch {
+                            isLoggedIn = authRepository.login(email, password)
+                        }
+                    })
+                    { Text("Log In") }
+                }
+
+                //userData database read/update/write buttons
                 Button(onClick = {lifecycleScope.launch {
-                    firestoreClient.insertUser(user).collect{ id->
-                        user = user.copy(id = id ?: "")
+                    firestoreClient.insertUser(user).collect{ userId->
+                        user = user.copy(userId = userId ?: "")
                     }
                 }})
                     { Text("Insert") }
@@ -50,8 +94,9 @@ class MainActivity : AppCompatActivity() {
                     firestoreClient.getUser(user.email).collect{ result->
                         if (result != null){
                             user = result
-                            println("FirestoreClient: did get user id = ${user.id}")
-                            println("FirestoreClient: did get user name = ${user.name}")
+                            println("FirestoreClient: did get user userId = ${user.userId}")
+                            println("FirestoreClient: did get user firstName = ${user.firstName}")
+                            println("FirestoreClient: did get user lastName = ${user.lastName}")
                             println("FirestoreClient: did get user email = ${user.email}")
                             println("FirestoreClient: did get user age = ${user.age}")
                         }
@@ -64,6 +109,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        //puts buttons on screen (temp)
         setContent {
             StyledButtons()
         }

@@ -12,17 +12,21 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     //temporary auth inject data
     private val email = "test1@gmail.com"
     private val password = "Test123456"
+
+    lateinit var authId: String
 
     //temporary user database inject data
     private var user = User(
@@ -47,12 +51,20 @@ class MainActivity : AppCompatActivity() {
             var isLoggedIn by rememberSaveable {
                 mutableStateOf(authRepository.isLoggedIn())
             }
+            LaunchedEffect(isLoggedIn) {
+                val uid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                if (user.userId != uid) {
+                    user = user.copy(userId = uid)
+                }
+            }
             Column(
                 verticalArrangement = Arrangement.spacedBy(30.dp)
             ) {
                 //register/login/logout auth buttons
 
                 if(isLoggedIn) {
+                    Text("Status: Logged In")
+                    Text("Auth ID: ${user.userId}")
                     Button(onClick = {
                         authRepository.logout()
                     })
@@ -75,13 +87,15 @@ class MainActivity : AppCompatActivity() {
                     { Text("Log In") }
                 }
 
+
                 //userData database read/update/write buttons
-                Button(onClick = {lifecycleScope.launch {
-                    firestoreClient.insertUser(user).collect{ userId->
-                        user = user.copy(userId = userId ?: "")
+                Button(onClick = {
+                    lifecycleScope.launch {
+                        firestoreClient.insertUser(user).collect{ id ->
+                            println("Firestore: Created/Set document with ID: $id")
+                        }
                     }
-                }})
-                    { Text("Insert") }
+                }) { Text("Insert") }
 
                 Button(onClick = {lifecycleScope.launch {
                     firestoreClient.updateUser(user).collect{ result->

@@ -13,6 +13,8 @@ class AuthRepository {
 
     private val firebaseAuth = FirebaseAuth.getInstance()
 
+    lateinit var uid: String
+
     //checks if user is logged in
     fun isLoggedIn(): Boolean {
         if (firebaseAuth.currentUser != null) {
@@ -31,6 +33,8 @@ class AuthRepository {
                 firebaseAuth.createUserWithEmailAndPassword(email, password)
                     .addOnSuccessListener {
                         println(tag + "register success")
+                        val currentFirebaseUser = FirebaseAuth.getInstance().currentUser
+                        uid = currentFirebaseUser?.uid ?: ""
                         CoroutineScope(Dispatchers.IO).launch {
                             continuation.resume(login(email, password))
                         }
@@ -59,6 +63,8 @@ class AuthRepository {
                 firebaseAuth.signInWithEmailAndPassword(email, password)
                     .addOnSuccessListener {
                         println(tag + "login success")
+                        val currentFirebaseUser = FirebaseAuth.getInstance().currentUser
+                        uid = currentFirebaseUser?.uid ?: ""
                         continuation.resume(true)
                     }
                     .addOnFailureListener {

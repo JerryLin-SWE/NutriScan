@@ -35,9 +35,7 @@ class AuthRepository {
                         println(tag + "register success")
                         val currentFirebaseUser = FirebaseAuth.getInstance().currentUser
                         uid = currentFirebaseUser?.uid ?: ""
-                        CoroutineScope(Dispatchers.IO).launch {
-                            continuation.resume(login(email, password))
-                        }
+                        continuation.resume(true)
 
                     }
                     .addOnFailureListener {

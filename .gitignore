@@ -1,16 +1,79 @@
+# ============================================================
+# Android / Gradle
+# ============================================================
 *.iml
-.gradle
+.gradle/
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/build/
+/captures/
+/app/build/
+.externalNativeBuild/
+.cxx/
+
+# Gradle wrapper binaries (keep gradlew scripts, ignore jars)
+gradle/wrapper/gradle-wrapper.jar
+
+# Generated files
+gen/
+out/
+
+# ============================================================
+# Android Keystore / Signing
+# ============================================================
+*.jks
+*.keystore
+keystore.properties
+release.properties
+signing.properties
+
+# ============================================================
+# IntelliJ / Android Studio
+# ============================================================
+.idea/
+*.iws
+
+# ============================================================
+# Kotlin
+# ============================================================
+.kotlin/
+
+# ============================================================
+# macOS
+# ============================================================
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# ============================================================
+# Secrets / API keys
+# ============================================================
+secrets.properties
+google-services.json
+GoogleService-Info.plist
+*.env
+.env.*
+
+# ============================================================
+# ProGuard / R8 mappings
+# ============================================================
+# Uncomment to ignore mapping files (keep if you need crash deobfuscation)
+# /app/mapping/
+# /app/proguard/
+
+# ============================================================
+# Test & Coverage output
+# ============================================================
+*.exec
+*.ec
+jacocoHtml/
+
+# ============================================================
+# Misc
+# ============================================================
+*.orig
+*.bak
+*.swp
+*~
 .claude/

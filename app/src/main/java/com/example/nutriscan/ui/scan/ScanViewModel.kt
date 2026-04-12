@@ -1,0 +1,131 @@
+package com.example.nutriscan.ui.scan
+
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.nutriscan.domain.DietAnalyzer
+import com.example.nutriscan.domain.FitResult
+import com.example.nutriscan.domain.NutritionLabel
+import com.example.nutriscan.domain.NutritionParser
+import com.example.nutriscan.domain.UserGoals
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import java.util.concurrent.Executors
+
+sealed interface ScanUiState {
+    data object Idle       : ScanUiState
+    data object Scanning   : ScanUiState
+    data class  Error(val message: String) : ScanUiState
+    data class  Results(
+        val label:  NutritionLabel,
+        val result: FitResult,
+    ) : ScanUiState
+}
+
+class ScanViewModel : ViewModel() {
+
+    private val _uiState = MutableStateFlow<ScanUiState>(ScanUiState.Idle)
+    val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
+
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
+    private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+    private var imageCapture: ImageCapture? = null
+    private var camera: Camera? = null
+
+    // Placeholder goals — will be replaced once user profile / Firestore is wired up
+    private val placeholderGoals = UserGoals(
+        dailyCalories = 2000,
+        dailyProteinG = 150,
+        dailyCarbsG   = 250,
+        dailyFatG     = 65,
+    )
+
+    fun bindCamera(
+        provider:       ProcessCameraProvider,
+        lifecycleOwner: LifecycleOwner,
+        previewView:    PreviewView,
+    ) {
+        val preview = Preview.Builder().build()
+            .also { it.surfaceProvider = previewView.surfaceProvider }
+
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+
+        runCatching {
+            provider.unbindAll()
+            camera = provider.bindToLifecycle(
+                lifecycleOwner,
+                CameraSelector.DEFAULT_BACK_CAMERA,
+                preview,
+                imageCapture,
+            )
+        }
+    }
+
+    fun captureAndScan() {
+        val capture = imageCapture ?: return
+        _uiState.update { ScanUiState.Scanning }
+
+        capture.takePicture(
+            cameraExecutor,
+            object : ImageCapture.OnImageCapturedCallback() {
+                @androidx.camera.core.ExperimentalGetImage
+                override fun onCaptureSuccess(proxy: ImageProxy) = processProxy(proxy)
+
+                override fun onError(e: ImageCaptureException) {
+                    _uiState.update { ScanUiState.Error("Capture failed: ${e.message}") }
+                }
+            }
+        )
+    }
+
+    @androidx.camera.core.ExperimentalGetImage
+    private fun processProxy(proxy: ImageProxy) {
+        val mediaImage = proxy.image
+        if (mediaImage == null) {
+            proxy.close()
+            _uiState.update { ScanUiState.Error("Could not read image.") }
+            return
+        }
+        val image = InputImage.fromMediaImage(mediaImage, proxy.imageInfo.rotationDegrees)
+        textRecognizer.process(image)
+            .addOnSuccessListener { visionText ->
+                val label = NutritionParser.parse(visionText.text)
+                if (label == null) {
+                    _uiState.update {
+                        ScanUiState.Error("No nutrition label detected. Try again with better lighting.")
+                    }
+                } else {
+                    val fitResult = DietAnalyzer.analyze(label, placeholderGoals)
+                    _uiState.update { ScanUiState.Results(label, fitResult) }
+                }
+            }
+            .addOnFailureListener { e ->
+                _uiState.update { ScanUiState.Error("Recognition failed: ${e.message}") }
+            }
+            .addOnCompleteListener { proxy.close() }
+    }
+
+    fun resetToIdle() = _uiState.update { ScanUiState.Idle }
+
+    override fun onCleared() {
+        super.onCleared()
+        cameraExecutor.shutdown()
+        textRecognizer.close()
+    }
+}

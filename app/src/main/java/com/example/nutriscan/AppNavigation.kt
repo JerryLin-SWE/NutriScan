@@ -81,7 +81,12 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
 
         composable("dashboard") {
-            DashboardScreen()
+            DashboardScreen(onLogout = {
+                authRepository.logout()
+                navController.navigate("welcome") {
+                    popUpTo(0) { inclusive = true }
+                }
+            })
         }
     }
 }

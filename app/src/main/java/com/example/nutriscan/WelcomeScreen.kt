@@ -1,6 +1,8 @@
 package com.example.nutriscan
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -28,7 +30,14 @@ fun WelcomeScreen(onGetStarted: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(32.dp)
-        ) {
+        ){
+
+
+        Image(
+            painter = painterResource(R.drawable.nutriscan_logo),
+            contentDescription = "NutriScan Logo",
+            modifier = Modifier.size(120.dp)
+        )
             Text(
                 text = "NutriScan",
                 fontSize = 36.sp,

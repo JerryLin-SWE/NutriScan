@@ -1,11 +1,19 @@
 package com.example.nutriscan
 
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 
+
+object OnboardingRoutes {
+    const val STEP_INFO = "onboarding_info"
+    const val STEP_GOALS = "onboarding_goals"
+    const val STEP_DIETARY = "onboarding_dietary"
+}
 @Composable
 fun AppNavigation(authRepository: AuthRepository) {
     val navController = rememberNavController()
@@ -15,6 +23,8 @@ fun AppNavigation(authRepository: AuthRepository) {
     var registerError by remember { mutableStateOf("") }
 
     val startDestination = if (authRepository.isLoggedIn()) "dashboard" else "welcome"
+
+
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -53,7 +63,7 @@ fun AppNavigation(authRepository: AuthRepository) {
                         val success = authRepository.register(email, password)
                         if (success) {
                             registerError = ""
-                            navController.navigate("onboarding") {
+                            navController.navigate("onboarding_path") {
                                 popUpTo("welcome") { inclusive = true }
                             }
                         } else {
@@ -69,16 +79,6 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-        composable("onboarding") {
-            OnboardingScreen(
-                onContinue = { age, metric, weight, activityLevel ->
-                    // save to Firestore later
-                    navController.navigate("dashboard") {
-                        popUpTo("onboarding") { inclusive = true }
-                    }
-                }
-            )
-        }
 
         composable("dashboard") {
             DashboardScreen(onLogout = {
@@ -87,6 +87,50 @@ fun AppNavigation(authRepository: AuthRepository) {
                     popUpTo(0) { inclusive = true }
                 }
             })
+        }
+
+        navigation(startDestination = OnboardingRoutes.STEP_INFO, route = "onboarding_path") {
+            composable(OnboardingRoutes.STEP_INFO) { backStackEntry ->
+                // Scope the ViewModel to the "onboarding_path" parent
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry("onboarding_path")
+                }
+                val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
+
+                OnboardingScreen(viewModel = vm) {
+                    navController.navigate(OnboardingRoutes.STEP_GOALS)
+                }
+            }
+
+            composable(OnboardingRoutes.STEP_GOALS) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry("onboarding_path")
+                }
+                val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
+
+                GoalsScreen(viewModel = vm) {
+                    navController.navigate(OnboardingRoutes.STEP_DIETARY) {
+                        popUpTo(OnboardingRoutes.STEP_INFO) { inclusive = true }
+                    }
+                }
+
+
+            }
+
+            composable(OnboardingRoutes.STEP_DIETARY) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry("onboarding_path")
+                }
+                val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
+
+               DietaryScreen(viewModel = vm) {
+                    navController.navigate("dashboard") {
+                        popUpTo(OnboardingRoutes.STEP_INFO) { inclusive = true }
+                    }
+                }
+
+
+            }
         }
     }
 }

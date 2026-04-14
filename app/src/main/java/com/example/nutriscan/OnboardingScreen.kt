@@ -13,16 +13,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activityLevel: Int) -> Unit) {
+fun OnboardingScreen(viewModel: OnboardingViewModel = viewModel(), onContinue: () -> Unit) {
 
-    // State
-    var selectedAge by remember { mutableStateOf(24) }
-    var selectedMetric by remember { mutableStateOf("Imperial (in, lbs, miles)") }
-    var selectedWeight by remember { mutableStateOf(150) }
-    var selectedActivity by remember { mutableStateOf(1) }
 
     var ageExpanded by remember { mutableStateOf(false) }
     var metricExpanded by remember { mutableStateOf(false) }
@@ -36,7 +32,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
         modifier = Modifier
             .fillMaxSize()
             .background(NutriBackground)
-            .padding(24.dp)
+            .padding(32.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -71,7 +67,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
                 Spacer(modifier = Modifier.height(4.dp))
                 ExposedDropdownMenuBox(expanded = ageExpanded, onExpandedChange = { ageExpanded = it }) {
                     OutlinedTextField(
-                        value = "$selectedAge",
+                        value = viewModel.age,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = ageExpanded) },
@@ -85,7 +81,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
                     ExposedDropdownMenu(expanded = ageExpanded, onDismissRequest = { ageExpanded = false }) {
                         ages.forEach { age ->
                             DropdownMenuItem(text = { Text("$age") }, onClick = {
-                                selectedAge = age
+                                viewModel.age = age.toString()
                                 ageExpanded = false
                             })
                         }
@@ -96,10 +92,11 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
             // Metric System dropdown
             Column {
                 Text("My Metric System", fontSize = 14.sp, color = Color.Black)
+                val displayMetric = if (viewModel.isMetric) "Metric (cm, kg, km)" else "Imperial (in, lbs, miles)"
                 Spacer(modifier = Modifier.height(4.dp))
                 ExposedDropdownMenuBox(expanded = metricExpanded, onExpandedChange = { metricExpanded = it }) {
                     OutlinedTextField(
-                        value = selectedMetric,
+                        value = displayMetric,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = metricExpanded) },
@@ -113,7 +110,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
                     ExposedDropdownMenu(expanded = metricExpanded, onDismissRequest = { metricExpanded = false }) {
                         metricOptions.forEach { option ->
                             DropdownMenuItem(text = { Text(option) }, onClick = {
-                                selectedMetric = option
+                                viewModel.isMetric = (option == "Metric (cm, kg, km)")
                                 metricExpanded = false
                             })
                         }
@@ -127,7 +124,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
                 Spacer(modifier = Modifier.height(4.dp))
                 ExposedDropdownMenuBox(expanded = weightExpanded, onExpandedChange = { weightExpanded = it }) {
                     OutlinedTextField(
-                        value = "$selectedWeight lbs",
+                        value = viewModel.weight,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = weightExpanded) },
@@ -141,7 +138,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
                     ExposedDropdownMenu(expanded = weightExpanded, onDismissRequest = { weightExpanded = false }) {
                         weights.forEach { w ->
                             DropdownMenuItem(text = { Text("$w lbs") }, onClick = {
-                                selectedWeight = w
+                                viewModel.weight = w.toString()
                                 weightExpanded = false
                             })
                         }
@@ -163,7 +160,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
                         .border(1.dp, NutriTeal, RoundedCornerShape(8.dp))
                 ) {
                     (1..5).forEach { level ->
-                        val isSelected = selectedActivity == level
+                        val isSelected = viewModel.activityLevel == level
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -173,7 +170,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
                                     else if (level == 5) RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
                                     else RoundedCornerShape(0.dp)
                                 )
-                                .clickable { selectedActivity = level }
+                                .clickable { viewModel.updateActivityLevel(level)}
                                 .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -191,7 +188,7 @@ fun OnboardingScreen(onContinue: (age: Int, metric: String, weight: Int, activit
 
             // Continue button
             Button(
-                onClick = { onContinue(selectedAge, selectedMetric, selectedWeight, selectedActivity) },
+                onClick = onContinue,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NutriTeal)

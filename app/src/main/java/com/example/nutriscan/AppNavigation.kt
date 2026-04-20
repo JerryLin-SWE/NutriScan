@@ -67,7 +67,8 @@ fun AppNavigation(authRepository: AuthRepository) {
                                 popUpTo("welcome") { inclusive = true }
                             }
                         } else {
-                            registerError = "Sign up failed. Email may already be in use."
+                            registerError = "Sign up failed. Email may already be in use. " +
+                                    "Password should be 6 characters or more."
                         }
                     }
                 },

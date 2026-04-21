@@ -16,7 +16,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -31,7 +30,6 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var localError by remember { mutableStateOf("") }
     val displayError = localError.ifEmpty { errorMessage }
-    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier

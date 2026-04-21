@@ -13,6 +13,8 @@ class AuthRepository {
 
     private val firebaseAuth = FirebaseAuth.getInstance()
 
+    val currentUser get() = firebaseAuth.currentUser
+
     lateinit var uid: String
 
     //checks if user is logged in

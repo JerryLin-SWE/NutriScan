@@ -85,7 +85,7 @@ class FirestoreClient {
     }
 
     //structure for saving data to database
-    private fun User.toHashMap(): HashMap<String, Any> {
+    private fun User.toHashMap(): HashMap<String, Any?> {
         return hashMapOf(
             "userId" to userId,
             "firstName" to firstName,

@@ -181,7 +181,7 @@ fun RegisterScreen(
                             firstName = firstName,
                             lastName = lastName,
                             email = email,
-                            age = -1
+                            age = null
                         )
                         onRegister(newUser, password)
 

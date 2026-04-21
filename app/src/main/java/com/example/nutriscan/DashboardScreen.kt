@@ -33,8 +33,7 @@ fun DashboardScreen(onLogout: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = {
-                    onLogout},
+                onClick = {onLogout()},
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
             ) {

@@ -20,7 +20,8 @@ fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClie
     var loginError by remember { mutableStateOf("") }
     var registerError by remember { mutableStateOf("") }
 
-    val startDestination = if (authRepository.isLoggedIn()) "dashboard" else "welcome"
+    val currentUser = authRepository.currentUser
+    val startDestination = if (currentUser != null) "dashboard" else "welcome"
 
 
 
@@ -67,11 +68,13 @@ fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClie
                             val updatedUser = user.copy(userId = uid)
 
                             firestoreClient.insertUser(updatedUser).collect { result ->
-                                println("Firestore insert success: $result")
-                            }
-
-                            navController.navigate("onboarding_path") {
-                                popUpTo("welcome") { inclusive = true }
+                                if (result) { // assuming Boolean success
+                                    navController.navigate("onboarding_path") {
+                                        popUpTo("welcome") { inclusive = true }
+                                    }
+                                } else {
+                                    registerError = "Failed to save user data."
+                                }
                             }
 
                         } else {

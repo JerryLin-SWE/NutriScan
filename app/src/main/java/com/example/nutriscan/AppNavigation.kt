@@ -8,17 +8,15 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 
-
 object OnboardingRoutes {
     const val STEP_INFO = "onboarding_info"
     const val STEP_GOALS = "onboarding_goals"
     const val STEP_DIETARY = "onboarding_dietary"
 }
 @Composable
-fun AppNavigation(authRepository: AuthRepository) {
+fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClient) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
-
     var loginError by remember { mutableStateOf("") }
     var registerError by remember { mutableStateOf("") }
 
@@ -58,14 +56,24 @@ fun AppNavigation(authRepository: AuthRepository) {
 
         composable("register") {
             RegisterScreen(
-                onRegister = { email, password ->
+                onRegister = { user, password ->
                     scope.launch {
-                        val success = authRepository.register(email, password)
+                        val success = authRepository.register(user.email, password)
+
                         if (success) {
                             registerError = ""
+
+                            val uid = authRepository.uid
+                            val updatedUser = user.copy(userId = uid)
+
+                            firestoreClient.insertUser(updatedUser).collect { result ->
+                                println("Firestore insert success: $result")
+                            }
+
                             navController.navigate("onboarding_path") {
                                 popUpTo("welcome") { inclusive = true }
                             }
+
                         } else {
                             registerError = "Sign up failed. Email may already be in use. " +
                                     "Password should be 6 characters or more."

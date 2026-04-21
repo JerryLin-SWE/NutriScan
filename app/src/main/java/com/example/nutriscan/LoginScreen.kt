@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
+import kotlinx.coroutines.launch
+
 
 @Composable
 fun LoginScreen(
@@ -110,7 +112,9 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { onLogin(email, password) },
+
+                onClick = { onLogin(email, password)
+                          },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),

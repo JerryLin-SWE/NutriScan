@@ -17,7 +17,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun DashboardScreen(onLogout: () -> Unit) {
+fun DashboardScreen(
+    onLogout: () -> Unit,
+    onNavigateToScan: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -32,6 +35,14 @@ fun DashboardScreen(onLogout: () -> Unit) {
                 color = NutriTeal
             )
             Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onNavigateToScan,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = NutriTeal)
+            ) {
+                Text("Scan Label", color = Color.White)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onLogout,
                 shape = RoundedCornerShape(8.dp),

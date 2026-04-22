@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.example.nutriscan.ui.scan.ScanScreen
 import kotlinx.coroutines.launch
 
 
@@ -14,6 +15,7 @@ object OnboardingRoutes {
     const val STEP_GOALS = "onboarding_goals"
     const val STEP_DIETARY = "onboarding_dietary"
 }
+
 @Composable
 fun AppNavigation(authRepository: AuthRepository) {
     val navController = rememberNavController()
@@ -23,8 +25,6 @@ fun AppNavigation(authRepository: AuthRepository) {
     var registerError by remember { mutableStateOf("") }
 
     val startDestination = if (authRepository.isLoggedIn()) "dashboard" else "welcome"
-
-
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -79,24 +79,28 @@ fun AppNavigation(authRepository: AuthRepository) {
             )
         }
 
-
         composable("dashboard") {
-            DashboardScreen(onLogout = {
-                authRepository.logout()
-                navController.navigate("welcome") {
-                    popUpTo(0) { inclusive = true }
-                }
-            })
+            DashboardScreen(
+                onLogout = {
+                    authRepository.logout()
+                    navController.navigate("welcome") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onNavigateToScan = { navController.navigate("scan") }
+            )
+        }
+
+        composable("scan") {
+            ScanScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         navigation(startDestination = OnboardingRoutes.STEP_INFO, route = "onboarding_path") {
             composable(OnboardingRoutes.STEP_INFO) { backStackEntry ->
-                // Scope the ViewModel to the "onboarding_path" parent
                 val parentEntry = remember(backStackEntry) {
                     navController.getBackStackEntry("onboarding_path")
                 }
                 val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
-
                 OnboardingScreen(viewModel = vm) {
                     navController.navigate(OnboardingRoutes.STEP_GOALS)
                 }
@@ -107,14 +111,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.getBackStackEntry("onboarding_path")
                 }
                 val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
-
                 GoalsScreen(viewModel = vm) {
                     navController.navigate(OnboardingRoutes.STEP_DIETARY) {
                         popUpTo(OnboardingRoutes.STEP_INFO) { inclusive = true }
                     }
                 }
-
-
             }
 
             composable(OnboardingRoutes.STEP_DIETARY) { backStackEntry ->
@@ -122,14 +123,11 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.getBackStackEntry("onboarding_path")
                 }
                 val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
-
-               DietaryScreen(viewModel = vm) {
+                DietaryScreen(viewModel = vm) {
                     navController.navigate("dashboard") {
                         popUpTo(OnboardingRoutes.STEP_INFO) { inclusive = true }
                     }
                 }
-
-
             }
         }
     }

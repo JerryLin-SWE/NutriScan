@@ -146,3 +146,4 @@ fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClie
         }
     }
 }
+

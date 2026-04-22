@@ -12,12 +12,13 @@ import kotlinx.coroutines.launch
 class FirestoreClient {
     private val tag = "FirestoreClient: "
     private val db = FirebaseFirestore.getInstance()
-    private val collection = "users"
+    private val userCollection = "users"
+    private val dietaryCollection = "dietaryInfo"
 
     //adds user data to database
     fun insertUser(user: User): Flow<Boolean> {
         return callbackFlow {
-            db.collection("users")
+            db.collection(userCollection)
                 .document(user.userId)
                 .set(user.toHashMap())
                 .addOnSuccessListener { document ->
@@ -45,7 +46,7 @@ class FirestoreClient {
                 trySend(false)
             } else {
                 // Handle the case where the user isn't logged in
-                db.collection(collection)
+                db.collection(userCollection)
                     .document(userId)
                     .set(user.toHashMap())
                     .addOnSuccessListener { document ->
@@ -65,7 +66,7 @@ class FirestoreClient {
     //gets user data from database
     fun getUser(uid: String): Flow<User?> {
         return callbackFlow{
-            db.collection("users").document(uid)
+            db.collection(userCollection).document(uid)
                 .get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
@@ -87,11 +88,10 @@ class FirestoreClient {
     //structure for saving data to database
     private fun User.toHashMap(): HashMap<String, Any?> {
         return hashMapOf(
-            "userId" to userId,
+            "userId" to userId,//primary key
             "firstName" to firstName,
             "lastName" to lastName,
-            "email" to email,
-            "age" to age
+            "email" to email
         )
     }
 
@@ -101,8 +101,111 @@ class FirestoreClient {
             userId = this["userId"] as String,
             firstName = this["firstName"] as String,
             lastName = this["lastName"] as String,
-            email = this["email"] as String,
-            age = (this["age"] as Long).toInt(),
+            email = this["email"] as String
+        )
+    }
+
+
+
+    //dietary Functions
+
+    //adds user data to database
+    fun insertDietary(user: User): Flow<Boolean> {
+        return callbackFlow {
+            db.collection(dietaryCollection)
+                .document(user.userId)
+                .set(user.toHashMap())
+                .addOnSuccessListener { document ->
+                    println(tag + "insert user with id: ${user.userId}")
+                    CoroutineScope(Dispatchers.IO).launch {
+                        updateUser(user).collect {}
+                    }
+                    trySend(true)
+                }
+                .addOnFailureListener { e ->
+                    e.printStackTrace()
+                    println(tag + "error inserting user: $e")
+                    trySend(false)
+                }
+            awaitClose {  }
+        }
+    }
+
+    //updates user data in database
+    fun updateDietary(user: User): Flow<Boolean?> {
+        return callbackFlow{
+            val userId = user.userId
+            if (userId.isEmpty()) {
+                println(tag + "user id is empty")
+                trySend(false)
+            } else {
+                // Handle the case where the user isn't logged in
+                db.collection(dietaryCollection)
+                    .document(userId)
+                    .set(user.toHashMap())
+                    .addOnSuccessListener { document ->
+                        println(tag + "update user with id: ${user.userId}")
+                        trySend(true)
+                    }
+                    .addOnFailureListener { e ->
+                        e.printStackTrace()
+                        println(tag + "error updating user: ${e.message}")
+                        trySend(false)
+                    }
+                awaitClose {  }
+            }
+        }
+    }
+
+    //gets user data from database
+    fun getDietary(uid: String): Flow<User?> {
+        return callbackFlow{
+            db.collection(dietaryCollection).document(uid)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        trySend(document.data?.toUser())
+                    } else {
+                        println(tag + "user not found: $uid")
+                        trySend(null)
+                    }
+                }
+                .addOnFailureListener { e ->
+                    e.printStackTrace()
+                    println(tag + "error getting user: ${e.message}")
+                    trySend(null)
+                }
+            awaitClose {  }
+        }
+    }
+
+    //structure for saving data to database
+    private fun Dietary.toHashMap(): HashMap<String, Any?> {
+        return hashMapOf(
+            "dietaryId" to dietaryId, //primary key
+            "age" to age,
+            "weight" to weight,
+            "metricUnit" to metricUnit,
+            "activityLevel" to activityLevel,
+            "goals" to goals,
+            "allergens" to allergens,
+            "diets" to diets,
+            "userId" to userId //foreign key
+        )
+    }
+
+    //structure for reading from the database
+    private fun Map<String, Any>.toDietary(): Dietary {
+        return Dietary(
+            dietaryId = this["dietaryId"] as String,
+            age = this["age"] as Int,
+            weight = this["weight"] as Int,
+            metricUnit = this["metricUnit"] as String,
+            activityLevel = this["activityLevel"] as Int,
+            goals = this["goals"] as List<String>,
+            allergens = this["allergens"] as List<String>,
+            diets = this["diets"] as List<String>,
+            userId = this["userId"] as String
         )
     }
 }

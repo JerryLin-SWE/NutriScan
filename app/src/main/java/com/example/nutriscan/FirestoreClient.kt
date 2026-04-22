@@ -109,16 +109,16 @@ class FirestoreClient {
 
     //dietary Functions
 
-    //adds user data to database
-    fun insertDietary(user: User): Flow<Boolean> {
+    //adds dietary data to database
+    fun insertDietary(dietary: Dietary): Flow<Boolean> {
         return callbackFlow {
             db.collection(dietaryCollection)
-                .document(user.userId)
-                .set(user.toHashMap())
+                .document(dietary.dietaryId)
+                .set(dietary.toHashMap())
                 .addOnSuccessListener { document ->
-                    println(tag + "insert user with id: ${user.userId}")
+                    println(tag + "insert dietary info with id: ${dietary.dietaryId}")
                     CoroutineScope(Dispatchers.IO).launch {
-                        updateUser(user).collect {}
+                        updateDietary(dietary).collect {}
                     }
                     trySend(true)
                 }
@@ -131,25 +131,25 @@ class FirestoreClient {
         }
     }
 
-    //updates user data in database
-    fun updateDietary(user: User): Flow<Boolean?> {
+    //updates dietary data in database
+    fun updateDietary(dietary: Dietary): Flow<Boolean?> {
         return callbackFlow{
-            val userId = user.userId
+            val userId = dietary.dietaryId
             if (userId.isEmpty()) {
-                println(tag + "user id is empty")
+                println(tag + "dietary id is empty")
                 trySend(false)
             } else {
                 // Handle the case where the user isn't logged in
                 db.collection(dietaryCollection)
                     .document(userId)
-                    .set(user.toHashMap())
+                    .set(dietary.toHashMap())
                     .addOnSuccessListener { document ->
-                        println(tag + "update user with id: ${user.userId}")
+                        println(tag + "update dietary info with id: ${dietary.dietaryId}")
                         trySend(true)
                     }
                     .addOnFailureListener { e ->
                         e.printStackTrace()
-                        println(tag + "error updating user: ${e.message}")
+                        println(tag + "error updating dietary info: ${e.message}")
                         trySend(false)
                     }
                 awaitClose {  }
@@ -158,21 +158,21 @@ class FirestoreClient {
     }
 
     //gets user data from database
-    fun getDietary(uid: String): Flow<User?> {
+    fun getDietary(dietaryId: String): Flow<User?> {
         return callbackFlow{
-            db.collection(dietaryCollection).document(uid)
+            db.collection(dietaryCollection).document(dietaryId)
                 .get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
                         trySend(document.data?.toUser())
                     } else {
-                        println(tag + "user not found: $uid")
+                        println(tag + "dietary info not found: $dietaryId")
                         trySend(null)
                     }
                 }
                 .addOnFailureListener { e ->
                     e.printStackTrace()
-                    println(tag + "error getting user: ${e.message}")
+                    println(tag + "error getting dietary info: ${e.message}")
                     trySend(null)
                 }
             awaitClose {  }

@@ -180,8 +180,7 @@ fun RegisterScreen(
                             userId = "",
                             firstName = firstName,
                             lastName = lastName,
-                            email = email,
-                            age = null
+                            email = email
                         )
                         onRegister(newUser, password)
 

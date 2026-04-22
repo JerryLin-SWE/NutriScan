@@ -1,13 +1,5 @@
 package com.example.nutriscan.domain
 
-/**
- * Parses raw OCR text from a nutrition facts label into a [NutritionLabel].
- *
- * Strategy: scan each line for a keyword, then grab the first integer that
- * follows it on the same line (or on the very next non-empty line).
- * This handles both single-column ("Calories 250") and two-column
- * ("Calories    250  125") label layouts.
- */
 object NutritionParser {
 
     // Each entry: pair of (field name for logging, list of regex patterns to try)

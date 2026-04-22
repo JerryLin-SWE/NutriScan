@@ -10,7 +10,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.nutriscan.domain.DietAnalyzer
 import com.example.nutriscan.domain.FitResult
 import com.example.nutriscan.domain.NutritionLabel

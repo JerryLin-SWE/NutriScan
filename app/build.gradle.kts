@@ -59,8 +59,10 @@ dependencies {
     implementation(libs.camera.camera2)
     implementation(libs.camera.lifecycle)
     implementation(libs.camera.view)
-    implementation(libs.mlkit.text.recognition)
     implementation(libs.accompanist.permissions)
+    implementation(libs.mlkit.text.recognition)
+
+    implementation(libs.guava)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)

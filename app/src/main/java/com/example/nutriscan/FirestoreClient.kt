@@ -112,6 +112,10 @@ class FirestoreClient {
     //adds dietary data to database
     fun insertDietary(dietary: Dietary): Flow<Boolean> {
         return callbackFlow {
+            val docRef = db.collection(dietaryCollection).document()
+            val newDietary = dietary.copy(dietaryId = docRef.id)
+
+            docRef.set(newDietary.toHashMap())
             db.collection(dietaryCollection)
                 .document(dietary.dietaryId)
                 .set(dietary.toHashMap())

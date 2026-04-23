@@ -135,12 +135,11 @@ fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClie
                 }
                 val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
 
-               DietaryScreen(viewModel = vm) {
+               DietaryScreen(viewModel = vm, firestoreClient = firestoreClient, authRepository = authRepository) {
                     navController.navigate("dashboard") {
                         popUpTo(OnboardingRoutes.STEP_INFO) { inclusive = true }
                     }
                 }
-
 
             }
         }

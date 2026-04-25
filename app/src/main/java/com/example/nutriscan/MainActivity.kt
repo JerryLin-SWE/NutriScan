@@ -11,9 +11,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val authRepository = AuthRepository()
+        val firestoreClient = FirestoreClient()
 
         setContent {
-            AppNavigation(authRepository = authRepository)
+            AppNavigation(authRepository = authRepository,
+                firestoreClient = firestoreClient
+            )
+
         }
     }
 }

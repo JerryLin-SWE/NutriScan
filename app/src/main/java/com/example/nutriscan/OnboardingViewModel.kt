@@ -82,4 +82,19 @@ class OnboardingViewModel: ViewModel() {
             activityLevel = level
         }
     }
+
+    fun buildDietary(userId: String): Dietary {
+        return Dietary(
+            dietaryId = "", // will be replaced in Firestore
+            age = age.toIntOrNull() ?: 0,
+            weight = weight.toIntOrNull() ?: 0,
+            metricUnit = if (isMetric) "Metric" else "Imperial",
+            activityLevel = activityLevel,
+            goals = selectedGoals.toList(),
+            allergens = selectedAllergens.toList(),
+            diets = selectedDiets.toList(),
+            userId = userId
+        )
+    }
+
 }

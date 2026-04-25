@@ -15,16 +15,18 @@ object OnboardingRoutes {
     const val STEP_GOALS = "onboarding_goals"
     const val STEP_DIETARY = "onboarding_dietary"
 }
-
 @Composable
-fun AppNavigation(authRepository: AuthRepository) {
+fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClient) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
     var loginError by remember { mutableStateOf("") }
     var registerError by remember { mutableStateOf("") }
 
-    val startDestination = if (authRepository.isLoggedIn()) "dashboard" else "welcome"
+    val currentUser = authRepository.currentUser
+    val startDestination = if (currentUser != null) "dashboard" else "welcome"
+
+
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -58,16 +60,29 @@ fun AppNavigation(authRepository: AuthRepository) {
 
         composable("register") {
             RegisterScreen(
-                onRegister = { email, password ->
+                onRegister = { user, password ->
                     scope.launch {
-                        val success = authRepository.register(email, password)
+                        val success = authRepository.register(user.email, password)
+
                         if (success) {
                             registerError = ""
-                            navController.navigate("onboarding_path") {
-                                popUpTo("welcome") { inclusive = true }
+
+                            val uid = authRepository.uid
+                            val updatedUser = user.copy(userId = uid)
+
+                            firestoreClient.insertUser(updatedUser).collect { result ->
+                                if (result) { // assuming Boolean success
+                                    navController.navigate("onboarding_path") {
+                                        popUpTo("welcome") { inclusive = true }
+                                    }
+                                } else {
+                                    registerError = "Failed to save user data."
+                                }
                             }
+
                         } else {
-                            registerError = "Sign up failed. Email may already be in use."
+                            registerError = "Sign up failed. Email may already be in use. " +
+                                    "Password should be 6 characters or more."
                         }
                     }
                 },
@@ -111,11 +126,14 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.getBackStackEntry("onboarding_path")
                 }
                 val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
+
                 GoalsScreen(viewModel = vm) {
                     navController.navigate(OnboardingRoutes.STEP_DIETARY) {
                         popUpTo(OnboardingRoutes.STEP_INFO) { inclusive = true }
                     }
                 }
+
+
             }
 
             composable(OnboardingRoutes.STEP_DIETARY) { backStackEntry ->
@@ -123,12 +141,15 @@ fun AppNavigation(authRepository: AuthRepository) {
                     navController.getBackStackEntry("onboarding_path")
                 }
                 val vm: OnboardingViewModel = viewModel(viewModelStoreOwner = parentEntry)
-                DietaryScreen(viewModel = vm) {
+
+               DietaryScreen(viewModel = vm, firestoreClient = firestoreClient, authRepository = authRepository) {
                     navController.navigate("dashboard") {
                         popUpTo(OnboardingRoutes.STEP_INFO) { inclusive = true }
                     }
                 }
+
             }
         }
     }
 }
+

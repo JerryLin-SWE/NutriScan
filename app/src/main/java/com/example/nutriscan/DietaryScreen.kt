@@ -1,5 +1,7 @@
 package com.example.nutriscan
 
+import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,18 +20,22 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DietaryScreen(viewModel: OnboardingViewModel = viewModel(), onContinue: () -> Unit) {
+fun DietaryScreen(viewModel: OnboardingViewModel, firestoreClient: FirestoreClient,
+                  authRepository: AuthRepository,
+                  onContinue: () -> Unit) {
     Box(
     modifier = Modifier
     .fillMaxSize()
@@ -138,8 +144,25 @@ fun DietaryScreen(viewModel: OnboardingViewModel = viewModel(), onContinue: () -
 
 
             // Continue button
+            val scope = rememberCoroutineScope()
+            val context = LocalContext.current
             Button(
-                onClick = { onContinue() },
+                onClick = {val userId = authRepository.uid ?: return@Button
+                    val dietary = viewModel.buildDietary(userId)
+                    scope.launch {
+                        firestoreClient.insertDietary(dietary).collect { success ->
+                            if (success) {
+                                onContinue()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to save dietary data.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                          },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NutriTeal)
@@ -150,8 +173,19 @@ fun DietaryScreen(viewModel: OnboardingViewModel = viewModel(), onContinue: () -
     }
 }
 
+
+@SuppressLint("ViewModelConstructorInComposable")
 @Preview
 @Composable
 fun Preview() {
-    DietaryScreen() { }
+    val fakeViewModel = OnboardingViewModel()
+    val fakeFirestore = FirestoreClient()
+    val fakeAuth = AuthRepository() // might need constructor args
+
+    DietaryScreen(
+        viewModel = fakeViewModel,
+        firestoreClient = fakeFirestore,
+        authRepository = fakeAuth,
+        onContinue = {}
+    )
 }

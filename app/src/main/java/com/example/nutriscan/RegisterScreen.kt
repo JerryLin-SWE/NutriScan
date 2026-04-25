@@ -19,11 +19,13 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun RegisterScreen(
-    onRegister: (email: String, password: String) -> Unit,
+    onRegister: (User, String) -> Unit,
     onBackToLogin: () -> Unit,
     errorMessage: String = ""
 ) {
     var email by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var localError by remember { mutableStateOf("") }
@@ -67,6 +69,48 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NutriTeal,
+                        unfocusedBorderColor = Color.LightGray
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // First Name
+            Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
+                Text("First Name", fontSize = 14.sp, color = Color.Black)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = firstName,
+                    onValueChange = { firstName = it },
+                    placeholder = { Text("First Name", color = Color.Gray) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NutriTeal,
+                        unfocusedBorderColor = Color.LightGray
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Last Name
+            Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
+                Text("Last Name", fontSize = 14.sp, color = Color.Black)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = lastName,
+                    onValueChange = { lastName = it },
+                    placeholder = { Text("Last Name", color = Color.Gray) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = NutriTeal,
@@ -131,7 +175,15 @@ fun RegisterScreen(
                     if (password != confirmPassword) {
                         localError = "Passwords do not match"
                     } else {
-                        onRegister(email, password)
+                        //saving new user data to send it to firestore
+                        val newUser = User(
+                            userId = "",
+                            firstName = firstName,
+                            lastName = lastName,
+                            email = email
+                        )
+                        onRegister(newUser, password)
+
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),

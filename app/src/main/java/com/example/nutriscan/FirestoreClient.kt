@@ -116,19 +116,13 @@ class FirestoreClient {
             val newDietary = dietary.copy(dietaryId = docRef.id)
 
             docRef.set(newDietary.toHashMap())
-            db.collection(dietaryCollection)
-                .document(dietary.dietaryId)
-                .set(dietary.toHashMap())
-                .addOnSuccessListener { document ->
+                .addOnSuccessListener {
                     println(tag + "insert dietary info with id: ${dietary.dietaryId}")
-                    CoroutineScope(Dispatchers.IO).launch {
-                        updateDietary(dietary).collect {}
-                    }
                     trySend(true)
                 }
                 .addOnFailureListener { e ->
                     e.printStackTrace()
-                    println(tag + "error inserting user: $e")
+                    println(tag + "error inserting dietary info: ${e.message}")
                     trySend(false)
                 }
             awaitClose {  }
@@ -162,13 +156,13 @@ class FirestoreClient {
     }
 
     //gets user data from database
-    fun getDietary(dietaryId: String): Flow<User?> {
+    fun getDietary(dietaryId: String): Flow<Dietary?> {
         return callbackFlow{
             db.collection(dietaryCollection).document(dietaryId)
                 .get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        trySend(document.data?.toUser())
+                        trySend(document.data?.toDietary())
                     } else {
                         println(tag + "dietary info not found: $dietaryId")
                         trySend(null)

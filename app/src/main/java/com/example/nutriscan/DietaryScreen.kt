@@ -1,6 +1,7 @@
 package com.example.nutriscan
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -141,17 +143,20 @@ fun DietaryScreen(viewModel: OnboardingViewModel, firestoreClient: FirestoreClie
 
             // Continue button
             val scope = rememberCoroutineScope()
+            val context = LocalContext.current
             Button(
-                onClick = {  val userId = authRepository.uid ?: return@Button
-
+                onClick = {val userId = authRepository.uid ?: return@Button
                     val dietary = viewModel.buildDietary(userId)
-
                     scope.launch {
                         firestoreClient.insertDietary(dietary).collect { success ->
                             if (success) {
                                 onContinue()
                             } else {
-                                // handle error (toast/snackbar later)
+                                Toast.makeText(
+                                    context,
+                                    "Failed to save dietary data.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     }

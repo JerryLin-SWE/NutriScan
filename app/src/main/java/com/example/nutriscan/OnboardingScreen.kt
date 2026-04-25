@@ -188,7 +188,7 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = viewModel(), onContinue: (
 
             // Continue button
             Button(
-                onClick = {onContinue},
+                onClick = {onContinue()},
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NutriTeal)

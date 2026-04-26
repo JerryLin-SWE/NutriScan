@@ -3,9 +3,12 @@ package com.example.nutriscan
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,25 +30,39 @@ fun DashboardScreen(
     onLogout: () -> Unit,
     onNavigateToScan: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(NutriBackground)
-            .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
-    ) {
-        DietAtAGlanceCard()
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard(label = "Sugar Intake", value = "256g", change = "+26%", up = true, modifier = Modifier.weight(1f))
-            StatCard(label = "Fat Intake", value = "174g", change = "-13%", up = false, modifier = Modifier.weight(1f))
+    Scaffold(
+        containerColor = NutriBackground,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToScan,
+                shape = CircleShape,
+                containerColor = CardTeal
+            ) {
+                Text(text = "📷", fontSize = 22.sp)
+            }
+        },
+        floatingActionButtonPosition = androidx.compose.material3.FabPosition.Center
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+        ) {
+            DietAtAGlanceCard()
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard(label = "Sugar Intake", value = "256g", change = "+26%", up = true, modifier = Modifier.weight(1f))
+                StatCard(label = "Fat Intake", value = "174g", change = "-13%", up = false, modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard(label = "Water Intake", value = "376ml", change = "-32%", up = false, modifier = Modifier.weight(1f))
+                StatCard(label = "Protein Intake", value = "120g", change = "+56%", up = true, modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            PantrySection()
         }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard(label = "Water Intake", value = "376ml", change = "-32%", up = false, modifier = Modifier.weight(1f))
-            StatCard(label = "Protein Intake", value = "120g", change = "+56%", up = true, modifier = Modifier.weight(1f))
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        PantrySection()
     }
 }
 

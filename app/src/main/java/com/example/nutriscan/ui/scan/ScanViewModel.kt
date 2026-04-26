@@ -128,7 +128,9 @@ class ScanViewModel(
                                 calories = label.calories,
                                 proteinG = label.proteinG,
                                 carbsG = label.carbsG,
-                                fatG = label.fatG
+                                fatG = label.fatG,
+                                sugarG = label.sugarG,
+                                waterMl = label.waterMl
                             )
                         ).collect {}
                     }

@@ -7,5 +7,7 @@ data class NutritionLog(
     val proteinG: Int = 0,
     val carbsG: Int = 0,
     val fatG: Int = 0,
+    val sugarG: Int = 0,
+    val waterMl: Int = 0,
     val timestamp: Long = System.currentTimeMillis()
 )

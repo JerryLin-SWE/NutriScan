@@ -5,6 +5,8 @@ data class NutritionLabel(
     val proteinG:    Int,
     val carbsG:      Int,
     val fatG:        Int,
+    val sugarG:      Int = 0,
+    val waterMl:     Int = 0,
     val servingSize: String = "",
     val rawText:     String = "",
 )

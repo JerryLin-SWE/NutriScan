@@ -253,6 +253,8 @@ class FirestoreClient {
             "proteinG" to proteinG,
             "carbsG" to carbsG,
             "fatG" to fatG,
+            "sugarG" to sugarG,
+            "waterMl" to waterMl,
             "timestamp" to timestamp
         )
     }
@@ -265,6 +267,8 @@ class FirestoreClient {
             proteinG = (this["proteinG"] as? Long)?.toInt() ?: 0,
             carbsG = (this["carbsG"] as? Long)?.toInt() ?: 0,
             fatG = (this["fatG"] as? Long)?.toInt() ?: 0,
+            sugarG = (this["sugarG"] as? Long)?.toInt() ?: 0,
+            waterMl = (this["waterMl"] as? Long)?.toInt() ?: 0,
             timestamp = this["timestamp"] as? Long ?: 0L
         )
     }

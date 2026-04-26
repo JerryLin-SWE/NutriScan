@@ -31,7 +31,7 @@ fun DashboardScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(NutriBackground)
-            .padding(16.dp)
+            .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
         DietAtAGlanceCard()
         Spacer(modifier = Modifier.height(16.dp))

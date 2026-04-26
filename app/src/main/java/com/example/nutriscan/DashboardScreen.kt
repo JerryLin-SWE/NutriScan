@@ -44,6 +44,8 @@ fun DashboardScreen(
             StatCard(label = "Water Intake", value = "376ml", change = "-32%", up = false, modifier = Modifier.weight(1f))
             StatCard(label = "Protein Intake", value = "120g", change = "+56%", up = true, modifier = Modifier.weight(1f))
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        PantrySection()
     }
 }
 
@@ -90,6 +92,30 @@ private fun StatCard(label: String, value: String, change: String, up: Boolean, 
                 fontSize = 14.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = if (up) Color(0xFFE53935) else Color(0xFF43A047)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PantrySection() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardTeal)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Your Pantry",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "No items yet. Scan a label to get started!",
+                fontSize = 13.sp,
+                color = Color.White.copy(alpha = 0.7f)
             )
         }
     }

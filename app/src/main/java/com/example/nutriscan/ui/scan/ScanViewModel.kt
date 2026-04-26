@@ -131,25 +131,29 @@ class ScanViewModel(
                 } else {
                     val fitResult = DietAnalyzer.analyze(label, placeholderGoals, userAllergens)
                     _uiState.update { ScanUiState.Results(label, fitResult) }
-                    CoroutineScope(Dispatchers.IO).launch {
-                        firestoreClient.insertNutritionLog(
-                            NutritionLog(
-                                userId = userId,
-                                calories = label.calories,
-                                proteinG = label.proteinG,
-                                carbsG = label.carbsG,
-                                fatG = label.fatG,
-                                sugarG = label.sugarG,
-                                waterMl = label.waterMl
-                            )
-                        ).collect {}
-                    }
                 }
             }
             .addOnFailureListener { e ->
                 _uiState.update { ScanUiState.Error("Recognition failed: ${e.message}") }
             }
             .addOnCompleteListener { proxy.close() }
+    }
+
+    fun saveLog(label: com.example.nutriscan.domain.NutritionLabel, productName: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            firestoreClient.insertNutritionLog(
+                NutritionLog(
+                    userId = userId,
+                    productName = productName,
+                    calories = label.calories,
+                    proteinG = label.proteinG,
+                    carbsG = label.carbsG,
+                    fatG = label.fatG,
+                    sugarG = label.sugarG,
+                    waterMl = label.waterMl
+                )
+            ).collect {}
+        }
     }
 
     fun resetToIdle() = _uiState.update { ScanUiState.Idle }

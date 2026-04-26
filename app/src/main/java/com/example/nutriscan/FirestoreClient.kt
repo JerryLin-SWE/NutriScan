@@ -269,6 +269,7 @@ class FirestoreClient {
         return hashMapOf(
             "logId" to logId,
             "userId" to userId,
+            "productName" to productName,
             "calories" to calories,
             "proteinG" to proteinG,
             "carbsG" to carbsG,
@@ -283,6 +284,7 @@ class FirestoreClient {
         return NutritionLog(
             logId = this["logId"] as? String ?: "",
             userId = this["userId"] as? String ?: "",
+            productName = this["productName"] as? String ?: "",
             calories = (this["calories"] as? Long)?.toInt() ?: 0,
             proteinG = (this["proteinG"] as? Long)?.toInt() ?: 0,
             carbsG = (this["carbsG"] as? Long)?.toInt() ?: 0,

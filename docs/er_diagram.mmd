@@ -1,45 +1,35 @@
 erDiagram
     USER {
         string userId PK
+        string firstName
+        string lastName
         string email
-        int dailyCalories
-        int dailyProtein
-        int dailyCarbs
-        int dailyFat
     }
 
-    SCAN_SESSION {
-        string sessionId PK
+    DIETARY {
+        string dietaryId PK
         string userId FK
-        timestamp scannedAt
-        string deviceInfo
+        int age
+        int weight
+        string metricUnit
+        int activityLevel
+        list goals
+        list allergens
+        list diets
     }
 
-    NUTRITION_LABEL {
-        string labelId PK
-        string sessionId FK
+    NUTRITION_LOG {
+        string logId PK
+        string userId FK
+        string productName
         int calories
-        int protein
-        int carbs
-        int fat
-        string servingSize
-        string rawText
+        int proteinG
+        int carbsG
+        int fatG
+        int sugarG
+        int waterMl
+        long timestamp
     }
 
-    FIT_RESULT {
-        string resultId PK
-        string userId FK
-        string labelId FK
-        boolean fitsInDiet
-        int remainingCalories
-        int remainingProtein
-        int remainingCarbs
-        int remainingFat
-        string message
-    }
-
-    USER ||--o{ SCAN_SESSION : "performs"
-    SCAN_SESSION ||--|| NUTRITION_LABEL : "captures"
-    USER ||--o{ FIT_RESULT : "receives"
-    NUTRITION_LABEL ||--|| FIT_RESULT : "evaluated into"
-
+    USER ||--o{ DIETARY : "has"
+    USER ||--o{ NUTRITION_LOG : "scans"

@@ -227,6 +227,22 @@ class FirestoreClient {
         }
     }
 
+    fun getDailyLogs(userId: String, startOfDay: Long, endOfDay: Long): Flow<List<NutritionLog>> {
+        return callbackFlow {
+            db.collection("nutritionLogs")
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("timestamp", startOfDay)
+                .whereLessThanOrEqualTo("timestamp", endOfDay)
+                .get()
+                .addOnSuccessListener { result ->
+                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
+                    trySend(logs)
+                }
+                .addOnFailureListener { trySend(emptyList()) }
+            awaitClose { }
+        }
+    }
+
     // nutrition log functions
 
     fun insertNutritionLog(log: NutritionLog): Flow<Boolean> {

@@ -102,7 +102,9 @@ fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClie
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onNavigateToScan = { navController.navigate("scan") }
+                onNavigateToScan = { navController.navigate("scan") },
+                firestoreClient = firestoreClient,
+                userId = authRepository.currentUser?.uid ?: ""
             )
         }
 

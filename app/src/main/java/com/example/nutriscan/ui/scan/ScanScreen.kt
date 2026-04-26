@@ -75,7 +75,9 @@ import com.google.accompanist.permissions.shouldShowRationale
 @Composable
 fun ScanScreen(
     onNavigateBack: () -> Unit,
-    viewModel: ScanViewModel = viewModel(),
+    firestoreClient: com.example.nutriscan.FirestoreClient,
+    userId: String,
+    viewModel: ScanViewModel = viewModel(factory = ScanViewModelFactory(firestoreClient, userId)),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)

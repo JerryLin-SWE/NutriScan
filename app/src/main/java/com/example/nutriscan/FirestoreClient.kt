@@ -206,4 +206,66 @@ class FirestoreClient {
             userId = this["userId"] as String
         )
     }
+
+    // nutrition log functions
+
+    fun insertNutritionLog(log: NutritionLog): Flow<Boolean> {
+        return callbackFlow {
+            val docRef = db.collection("nutritionLogs").document()
+            val newLog = log.copy(logId = docRef.id)
+            docRef.set(newLog.toHashMap())
+                .addOnSuccessListener {
+                    println(tag + "inserted nutrition log: ${newLog.logId}")
+                    trySend(true)
+                }
+                .addOnFailureListener { e ->
+                    e.printStackTrace()
+                    trySend(false)
+                }
+            awaitClose { }
+        }
+    }
+
+    fun getWeeklyLogs(userId: String): Flow<List<NutritionLog>> {
+        return callbackFlow {
+            val oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+            db.collection("nutritionLogs")
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("timestamp", oneWeekAgo)
+                .get()
+                .addOnSuccessListener { result ->
+                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
+                    trySend(logs)
+                }
+                .addOnFailureListener { e ->
+                    e.printStackTrace()
+                    trySend(emptyList())
+                }
+            awaitClose { }
+        }
+    }
+
+    private fun NutritionLog.toHashMap(): HashMap<String, Any?> {
+        return hashMapOf(
+            "logId" to logId,
+            "userId" to userId,
+            "calories" to calories,
+            "proteinG" to proteinG,
+            "carbsG" to carbsG,
+            "fatG" to fatG,
+            "timestamp" to timestamp
+        )
+    }
+
+    private fun Map<String, Any>.toNutritionLog(): NutritionLog {
+        return NutritionLog(
+            logId = this["logId"] as? String ?: "",
+            userId = this["userId"] as? String ?: "",
+            calories = (this["calories"] as? Long)?.toInt() ?: 0,
+            proteinG = (this["proteinG"] as? Long)?.toInt() ?: 0,
+            carbsG = (this["carbsG"] as? Long)?.toInt() ?: 0,
+            fatG = (this["fatG"] as? Long)?.toInt() ?: 0,
+            timestamp = this["timestamp"] as? Long ?: 0L
+        )
+    }
 }

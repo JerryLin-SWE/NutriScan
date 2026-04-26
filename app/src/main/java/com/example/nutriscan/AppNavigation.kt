@@ -107,7 +107,11 @@ fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClie
         }
 
         composable("scan") {
-            ScanScreen(onNavigateBack = { navController.popBackStack() })
+            ScanScreen(
+                onNavigateBack = { navController.popBackStack() },
+                firestoreClient = firestoreClient,
+                userId = authRepository.currentUser?.uid ?: ""
+            )
         }
 
         navigation(startDestination = OnboardingRoutes.STEP_INFO, route = "onboarding_path") {

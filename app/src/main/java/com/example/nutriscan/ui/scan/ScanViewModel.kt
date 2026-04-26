@@ -10,6 +10,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.nutriscan.FirestoreClient
+import com.example.nutriscan.NutritionLog
 import com.example.nutriscan.domain.DietAnalyzer
 import com.example.nutriscan.domain.FitResult
 import com.example.nutriscan.domain.NutritionLabel
@@ -18,6 +21,9 @@ import com.example.nutriscan.domain.UserGoals
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +40,10 @@ sealed interface ScanUiState {
     ) : ScanUiState
 }
 
-class ScanViewModel : ViewModel() {
+class ScanViewModel(
+    private val firestoreClient: FirestoreClient,
+    private val userId: String
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ScanUiState>(ScanUiState.Idle)
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
@@ -112,6 +121,17 @@ class ScanViewModel : ViewModel() {
                 } else {
                     val fitResult = DietAnalyzer.analyze(label, placeholderGoals)
                     _uiState.update { ScanUiState.Results(label, fitResult) }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        firestoreClient.insertNutritionLog(
+                            NutritionLog(
+                                userId = userId,
+                                calories = label.calories,
+                                proteinG = label.proteinG,
+                                carbsG = label.carbsG,
+                                fatG = label.fatG
+                            )
+                        ).collect {}
+                    }
                 }
             }
             .addOnFailureListener { e ->
@@ -126,5 +146,15 @@ class ScanViewModel : ViewModel() {
         super.onCleared()
         cameraExecutor.shutdown()
         textRecognizer.close()
+    }
+}
+
+class ScanViewModelFactory(
+    private val firestoreClient: FirestoreClient,
+    private val userId: String
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return ScanViewModel(firestoreClient, userId) as T
     }
 }

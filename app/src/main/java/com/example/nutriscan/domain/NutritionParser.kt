@@ -20,6 +20,14 @@ object NutritionParser {
         Regex("""total\s+fat[^\d]*(\d+)""", RegexOption.IGNORE_CASE),
         Regex("""(?<!\w)fat[^\d]*(\d+)""", RegexOption.IGNORE_CASE),
     )
+    private val sugarPatterns = listOf(
+        Regex("""total\s+sugar\w*[^\d]*(\d+)""", RegexOption.IGNORE_CASE),
+        Regex("""sugars?[^\d]*(\d+)""", RegexOption.IGNORE_CASE),
+    )
+    private val waterPatterns = listOf(
+        Regex("""water[^\d]*(\d+)\s*ml""", RegexOption.IGNORE_CASE),
+        Regex("""water[^\d]*(\d+)""", RegexOption.IGNORE_CASE),
+    )
     private val servingPatterns = listOf(
         Regex("""serving\s+size[^\n]*""", RegexOption.IGNORE_CASE),
         Regex("""serv\.\s+size[^\n]*""", RegexOption.IGNORE_CASE),
@@ -34,6 +42,8 @@ object NutritionParser {
         val protein  = firstMatch(proteinPatterns, flat) ?: 0
         val carbs    = firstMatch(carbPatterns,    flat) ?: 0
         val fat      = firstMatch(fatPatterns,     flat) ?: 0
+        val sugar    = firstMatch(sugarPatterns,   flat) ?: 0
+        val water    = firstMatch(waterPatterns,   flat) ?: 0
         val serving  = servingPatterns
             .firstNotNullOfOrNull { it.find(flat)?.value?.trim() } ?: ""
 
@@ -42,6 +52,8 @@ object NutritionParser {
             proteinG    = protein,
             carbsG      = carbs,
             fatG        = fat,
+            sugarG      = sugar,
+            waterMl     = water,
             servingSize = serving,
             rawText     = rawText,
         )

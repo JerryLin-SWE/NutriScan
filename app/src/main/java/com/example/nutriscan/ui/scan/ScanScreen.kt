@@ -39,7 +39,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.Alignment
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.Modifier
@@ -75,7 +78,9 @@ import com.google.accompanist.permissions.shouldShowRationale
 @Composable
 fun ScanScreen(
     onNavigateBack: () -> Unit,
-    viewModel: ScanViewModel = viewModel(),
+    firestoreClient: com.example.nutriscan.FirestoreClient,
+    userId: String,
+    viewModel: ScanViewModel = viewModel(factory = ScanViewModelFactory(firestoreClient, userId)),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
@@ -116,6 +121,7 @@ fun ScanScreen(
                         label    = results.label,
                         result   = results.result,
                         onReset  = viewModel::resetToIdle,
+                        onSaveWithName = { name -> viewModel.saveLog(results.label, name) }
                     )
                 }
             }
@@ -275,7 +281,10 @@ private fun ResultsSheet(
     label:   NutritionLabel,
     result:  FitResult,
     onReset: () -> Unit,
+    onSaveWithName: (String) -> Unit = {},
 ) {
+    var productName by remember { mutableStateOf("") }
+
     Surface(
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         color = Color.White,
@@ -288,9 +297,31 @@ private fun ResultsSheet(
         ) {
             SheetHandle()
             FitBanner(result = result)
+            if (result.allergenWarnings.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                AllergenWarningBanner(allergens = result.allergenWarnings)
+            }
             Spacer(Modifier.height(12.dp))
             MacroRow(label = label)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = productName,
+                onValueChange = { productName = it },
+                label = { Text("What is this product?") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = { onSaveWithName(productName); onReset() },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+            ) {
+                Text("Save to Pantry", fontWeight = FontWeight.SemiBold, color = Color.White)
+            }
+            Spacer(Modifier.height(8.dp))
             OutlinedButton(
                 onClick  = onReset,
                 modifier = Modifier
@@ -302,6 +333,34 @@ private fun ResultsSheet(
                 Text("Scan another", fontWeight = FontWeight.SemiBold)
             }
             Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun AllergenWarningBanner(allergens: List<String>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFFFFEBEE))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("⚠️", fontSize = 20.sp)
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(
+                text = "Allergen Warning!",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFFB71C1C)
+            )
+            Text(
+                text = "Contains: ${allergens.joinToString(", ")}",
+                fontSize = 11.sp,
+                color = Color(0xFFB71C1C)
+            )
         }
     }
 }

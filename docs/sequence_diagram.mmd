@@ -1,116 +1,66 @@
 sequenceDiagram
     actor User
-    participant AuthActivity
-    participant FirebaseAuth as Firebase<br/>FirebaseAuth
-    participant MacroInputActivity
-    participant FirestoreRepository
-    participant FirebaseFirestore as Firebase<br/>FirebaseFirestore
-    participant MainActivity
-    participant AndroidPermissions as System<br/>AndroidPermissions
-    participant ProcessCameraProvider as CameraX<br/>ProcessCameraProvider
-    participant ImageCapture as CameraX<br/>ImageCapture
-    participant TextRecognizer as ML Kit<br/>TextRecognizer
-    participant NutritionParser
-    participant DietAnalyzer
+    participant App as AppNavigation
+    participant Auth as AuthRepository
+    participant Firebase as Firebase Auth
+    participant Firestore as FirestoreClient
+    participant Onboarding as OnboardingViewModel
+    participant Dashboard as DashboardScreen
+    participant Scan as ScanScreen
+    participant VM as ScanViewModel
+    participant Parser as NutritionParser
+    participant Analyzer as DietAnalyzer
 
-    Note over User,AuthActivity: Authentication Flow
-    
-    User->>AuthActivity: Launch app
-    activate AuthActivity
-    User->>AuthActivity: Enter email/password<br/>Click "Login"
-    AuthActivity->>FirebaseAuth: signInWithEmailAndPassword(email, password)
-    activate FirebaseAuth
-    FirebaseAuth-->>AuthActivity: Authentication success
-    deactivate FirebaseAuth
-    AuthActivity->>MacroInputActivity: Navigate to macro input
-    deactivate AuthActivity
-    
-    Note over MacroInputActivity,FirebaseFirestore: Macro Goal Setup
-    
-    activate MacroInputActivity
-    User->>MacroInputActivity: Enter daily macros<br/>(calories, protein, carbs, fat)
-    User->>MacroInputActivity: Click "Save"
-    MacroInputActivity->>FirestoreRepository: saveUserMacros(userId, macros)
-    activate FirestoreRepository
-    FirestoreRepository->>FirebaseFirestore: collection("users").document(userId).set(macros)
-    activate FirebaseFirestore
-    FirebaseFirestore-->>FirestoreRepository: Success
-    deactivate FirebaseFirestore
-    FirestoreRepository-->>MacroInputActivity: Save complete
-    deactivate FirestoreRepository
-    MacroInputActivity->>MainActivity: Navigate to main screen
-    deactivate MacroInputActivity
-    
-    Note over MainActivity,ImageCapture: Camera Permission & Setup
-    
-    activate MainActivity
-    User->>MainActivity: Click "Start Camera"
-    MainActivity->>AndroidPermissions: checkSelfPermission(CAMERA)
-    activate AndroidPermissions
-    
-    alt Permission NOT Granted
-        AndroidPermissions-->>MainActivity: PERMISSION_DENIED
-        MainActivity->>AndroidPermissions: requestPermission(CAMERA)
-        AndroidPermissions->>User: Show permission dialog
-        User->>AndroidPermissions: Grant permission
-        AndroidPermissions-->>MainActivity: PERMISSION_GRANTED
-    else Permission Already Granted
-        AndroidPermissions-->>MainActivity: PERMISSION_GRANTED
+    Note over User,App: App Launch
+    User->>App: Open app
+    App->>Auth: check currentUser
+    alt Already logged in
+        App->>Dashboard: navigate to dashboard
+    else Not logged in
+        App->>App: navigate to welcome
     end
-    deactivate AndroidPermissions
-    
-    MainActivity->>ProcessCameraProvider: getInstance(context)
-    activate ProcessCameraProvider
-    ProcessCameraProvider-->>MainActivity: CameraProvider instance
-    MainActivity->>ProcessCameraProvider: bindToLifecycle(preview, imageCapture)
-    ProcessCameraProvider->>ImageCapture: Initialize ImageCapture
-    activate ImageCapture
-    ProcessCameraProvider-->>MainActivity: Camera bound successfully
-    MainActivity-->>User: Show camera preview
-    Note right of MainActivity: Camera is now active<br/>and showing live preview
-    
-    Note over MainActivity,NutritionParser: Nutrition Label Scanning
-    
-    User->>MainActivity: Point camera at nutrition label<br/>Click "Scan Text"
-    MainActivity->>ImageCapture: takePicture()
-    ImageCapture-->>MainActivity: ImageProxy (captured frame)
-    deactivate ImageCapture
-    
-    MainActivity->>TextRecognizer: process(InputImage.fromMediaImage(imageProxy))
-    activate TextRecognizer
-    TextRecognizer-->>MainActivity: Text object (OCR text)
-    deactivate TextRecognizer
-    Note right of MainActivity: Raw text extracted:<br/>"Nutrition Facts<br/>Calories 250<br/>Protein 12g<br/>..."
-    
-    MainActivity->>NutritionParser: parseNutritionLabel(text)
-    activate NutritionParser
-    NutritionParser->>NutritionParser: extractCalories(text)
-    NutritionParser->>NutritionParser: extractProtein(text)
-    NutritionParser->>NutritionParser: extractCarbs(text)
-    NutritionParser->>NutritionParser: extractFat(text)
-    NutritionParser-->>MainActivity: NutritionLabel object
-    deactivate NutritionParser
-    Note right of MainActivity: Structured data:<br/>Calories: 250<br/>Protein: 12g<br/>Carbs: 30g<br/>Fat: 8g
-    
-    Note over MainActivity,DietAnalyzer: Diet Fit Analysis
-    
-    MainActivity->>FirestoreRepository: getUserMacros(userId)
-    activate FirestoreRepository
-    FirestoreRepository->>FirebaseFirestore: collection("users").document(userId).get()
-    activate FirebaseFirestore
-    FirebaseFirestore-->>FirestoreRepository: User document
-    deactivate FirebaseFirestore
-    FirestoreRepository-->>MainActivity: User object (daily goals)
-    deactivate FirestoreRepository
-    
-    MainActivity->>DietAnalyzer: analyzeItem(nutritionLabel, userGoals)
-    activate DietAnalyzer
-    DietAnalyzer->>DietAnalyzer: calculateRemainingMacros()
-    Note right of DietAnalyzer: Compare scanned nutrition<br/>against user's daily goals
-    DietAnalyzer->>DietAnalyzer: determineFit()
-    DietAnalyzer-->>MainActivity: FitResult<br/>(fitsInDiet: true/false,<br/>remaining macros, message)
-    deactivate DietAnalyzer
-    
-    MainActivity-->>User: Display results:<br/>"This item fits your diet!<br/>Remaining: 1500 cal, 80g protein..."
-    deactivate MainActivity
-    deactivate ProcessCameraProvider
+
+    Note over User,Firestore: Registration & Onboarding
+    User->>App: Register (email, password)
+    App->>Auth: register()
+    Auth->>Firebase: createUserWithEmailAndPassword()
+    Firebase-->>Auth: UID
+    App->>Firestore: insertUser(User)
+    App->>App: navigate to onboarding
+    User->>Onboarding: enter age, weight, goals, allergens, diets
+    Onboarding->>Firestore: insertDietary(Dietary)
+    App->>Dashboard: navigate to dashboard
+
+    Note over User,Firestore: Dashboard Load
+    Dashboard->>Firestore: getWeeklyLogs(userId)
+    Firestore-->>Dashboard: List~NutritionLog~ (pantry)
+    Dashboard->>Firestore: getDailyLogs(userId, today)
+    Firestore-->>Dashboard: today's logs
+    Dashboard->>Firestore: getDailyLogs(userId, yesterday)
+    Firestore-->>Dashboard: yesterday's logs
+    Dashboard-->>User: show pantry + stat cards with real data
+
+    Note over User,Firestore: Scanning a Label
+    User->>Dashboard: tap camera button
+    Dashboard->>Scan: navigate to scan
+    Scan->>VM: initialize ScanViewModel
+    VM->>Firestore: getAllergensByUserId(userId)
+    Firestore-->>VM: List~String~ allergens
+    User->>Scan: point camera at label, tap scan
+    VM->>VM: captureAndScan()
+    VM->>Parser: parse(rawText)
+    Parser-->>VM: NutritionLabel (calories, protein, fat, sugar, water)
+    VM->>Analyzer: analyze(label, goals, userAllergens)
+    Analyzer-->>VM: FitResult (fitsInDiet, allergenWarnings)
+    VM-->>Scan: ScanUiState.Results
+    Scan-->>User: show nutrition results + allergen warning if any
+
+    Note over User,Firestore: Saving to Pantry
+    User->>Scan: type product name, tap Save to Pantry
+    Scan->>VM: saveLog(label, productName)
+    VM->>Firestore: insertNutritionLog(NutritionLog)
+    Firestore-->>VM: success
+    User->>Scan: tap Scan another / back
+    Scan->>Dashboard: navigate back
+    Dashboard->>Firestore: refresh logs
+    Dashboard-->>User: pantry updated with new item

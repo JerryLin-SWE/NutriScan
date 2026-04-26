@@ -102,12 +102,18 @@ fun AppNavigation(authRepository: AuthRepository, firestoreClient: FirestoreClie
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onNavigateToScan = { navController.navigate("scan") }
+                onNavigateToScan = { navController.navigate("scan") },
+                firestoreClient = firestoreClient,
+                userId = authRepository.currentUser?.uid ?: ""
             )
         }
 
         composable("scan") {
-            ScanScreen(onNavigateBack = { navController.popBackStack() })
+            ScanScreen(
+                onNavigateBack = { navController.popBackStack() },
+                firestoreClient = firestoreClient,
+                userId = authRepository.currentUser?.uid ?: ""
+            )
         }
 
         navigation(startDestination = OnboardingRoutes.STEP_INFO, route = "onboarding_path") {

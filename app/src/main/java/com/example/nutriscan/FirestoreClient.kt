@@ -206,4 +206,108 @@ class FirestoreClient {
             userId = this["userId"] as String
         )
     }
+
+    fun getAllergensByUserId(userId: String): Flow<List<String>> {
+        return callbackFlow {
+            db.collection(dietaryCollection)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { result ->
+                    val allergens = result.documents
+                        .firstOrNull()
+                        ?.data
+                        ?.let { (it["allergens"] as? List<*>)?.filterIsInstance<String>() }
+                        ?: emptyList()
+                    trySend(allergens)
+                }
+                .addOnFailureListener {
+                    trySend(emptyList())
+                }
+            awaitClose { }
+        }
+    }
+
+    fun getDailyLogs(userId: String, startOfDay: Long, endOfDay: Long): Flow<List<NutritionLog>> {
+        return callbackFlow {
+            db.collection("nutritionLogs")
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("timestamp", startOfDay)
+                .whereLessThanOrEqualTo("timestamp", endOfDay)
+                .get()
+                .addOnSuccessListener { result ->
+                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
+                    trySend(logs)
+                }
+                .addOnFailureListener { trySend(emptyList()) }
+            awaitClose { }
+        }
+    }
+
+    // nutrition log functions
+
+    fun insertNutritionLog(log: NutritionLog): Flow<Boolean> {
+        return callbackFlow {
+            val docRef = db.collection("nutritionLogs").document()
+            val newLog = log.copy(logId = docRef.id)
+            docRef.set(newLog.toHashMap())
+                .addOnSuccessListener {
+                    println(tag + "inserted nutrition log: ${newLog.logId}")
+                    trySend(true)
+                }
+                .addOnFailureListener { e ->
+                    e.printStackTrace()
+                    trySend(false)
+                }
+            awaitClose { }
+        }
+    }
+
+    fun getWeeklyLogs(userId: String): Flow<List<NutritionLog>> {
+        return callbackFlow {
+            val oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+            db.collection("nutritionLogs")
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("timestamp", oneWeekAgo)
+                .get()
+                .addOnSuccessListener { result ->
+                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
+                    trySend(logs)
+                }
+                .addOnFailureListener { e ->
+                    e.printStackTrace()
+                    trySend(emptyList())
+                }
+            awaitClose { }
+        }
+    }
+
+    private fun NutritionLog.toHashMap(): HashMap<String, Any?> {
+        return hashMapOf(
+            "logId" to logId,
+            "userId" to userId,
+            "productName" to productName,
+            "calories" to calories,
+            "proteinG" to proteinG,
+            "carbsG" to carbsG,
+            "fatG" to fatG,
+            "sugarG" to sugarG,
+            "waterMl" to waterMl,
+            "timestamp" to timestamp
+        )
+    }
+
+    private fun Map<String, Any>.toNutritionLog(): NutritionLog {
+        return NutritionLog(
+            logId = this["logId"] as? String ?: "",
+            userId = this["userId"] as? String ?: "",
+            productName = this["productName"] as? String ?: "",
+            calories = (this["calories"] as? Long)?.toInt() ?: 0,
+            proteinG = (this["proteinG"] as? Long)?.toInt() ?: 0,
+            carbsG = (this["carbsG"] as? Long)?.toInt() ?: 0,
+            fatG = (this["fatG"] as? Long)?.toInt() ?: 0,
+            sugarG = (this["sugarG"] as? Long)?.toInt() ?: 0,
+            waterMl = (this["waterMl"] as? Long)?.toInt() ?: 0,
+            timestamp = this["timestamp"] as? Long ?: 0L
+        )
+    }
 }

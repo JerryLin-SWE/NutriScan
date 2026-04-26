@@ -10,6 +10,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.nutriscan.FirestoreClient
+import com.example.nutriscan.NutritionLog
 import com.example.nutriscan.domain.DietAnalyzer
 import com.example.nutriscan.domain.FitResult
 import com.example.nutriscan.domain.NutritionLabel
@@ -18,6 +21,9 @@ import com.example.nutriscan.domain.UserGoals
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +40,10 @@ sealed interface ScanUiState {
     ) : ScanUiState
 }
 
-class ScanViewModel : ViewModel() {
+class ScanViewModel(
+    private val firestoreClient: FirestoreClient,
+    private val userId: String
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ScanUiState>(ScanUiState.Idle)
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
@@ -45,6 +54,8 @@ class ScanViewModel : ViewModel() {
     private var imageCapture: ImageCapture? = null
     private var camera: Camera? = null
 
+    private var userAllergens: List<String> = emptyList()
+
     // Placeholder goals — will be replaced once user profile / Firestore is wired up
     private val placeholderGoals = UserGoals(
         dailyCalories = 2000,
@@ -52,6 +63,14 @@ class ScanViewModel : ViewModel() {
         dailyCarbsG   = 250,
         dailyFatG     = 65,
     )
+
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            firestoreClient.getAllergensByUserId(userId).collect { allergens ->
+                userAllergens = allergens
+            }
+        }
+    }
 
     fun bindCamera(
         provider:       ProcessCameraProvider,
@@ -110,7 +129,7 @@ class ScanViewModel : ViewModel() {
                         ScanUiState.Error("No nutrition label detected. Try again with better lighting.")
                     }
                 } else {
-                    val fitResult = DietAnalyzer.analyze(label, placeholderGoals)
+                    val fitResult = DietAnalyzer.analyze(label, placeholderGoals, userAllergens)
                     _uiState.update { ScanUiState.Results(label, fitResult) }
                 }
             }
@@ -120,11 +139,38 @@ class ScanViewModel : ViewModel() {
             .addOnCompleteListener { proxy.close() }
     }
 
+    fun saveLog(label: com.example.nutriscan.domain.NutritionLabel, productName: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            firestoreClient.insertNutritionLog(
+                NutritionLog(
+                    userId = userId,
+                    productName = productName,
+                    calories = label.calories,
+                    proteinG = label.proteinG,
+                    carbsG = label.carbsG,
+                    fatG = label.fatG,
+                    sugarG = label.sugarG,
+                    waterMl = label.waterMl
+                )
+            ).collect {}
+        }
+    }
+
     fun resetToIdle() = _uiState.update { ScanUiState.Idle }
 
     override fun onCleared() {
         super.onCleared()
         cameraExecutor.shutdown()
         textRecognizer.close()
+    }
+}
+
+class ScanViewModelFactory(
+    private val firestoreClient: FirestoreClient,
+    private val userId: String
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return ScanViewModel(firestoreClient, userId) as T
     }
 }

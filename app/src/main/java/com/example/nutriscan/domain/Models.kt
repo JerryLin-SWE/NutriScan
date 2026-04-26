@@ -5,6 +5,8 @@ data class NutritionLabel(
     val proteinG:    Int,
     val carbsG:      Int,
     val fatG:        Int,
+    val sugarG:      Int = 0,
+    val waterMl:     Int = 0,
     val servingSize: String = "",
     val rawText:     String = "",
 )
@@ -23,4 +25,5 @@ data class FitResult(
     val remainingCarbsG:   Int,
     val remainingFatG:     Int,
     val message:           String,
+    val allergenWarnings:  List<String> = emptyList(),
 )

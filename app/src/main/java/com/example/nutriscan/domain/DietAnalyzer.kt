@@ -2,7 +2,7 @@ package com.example.nutriscan.domain
 
 object DietAnalyzer {
 
-    fun analyze(label: NutritionLabel, goals: UserGoals): FitResult {
+    fun analyze(label: NutritionLabel, goals: UserGoals, userAllergens: List<String> = emptyList()): FitResult {
         val remCalories = goals.dailyCalories - label.calories
         val remProtein  = goals.dailyProteinG - label.proteinG
         val remCarbs    = goals.dailyCarbsG   - label.carbsG
@@ -22,6 +22,10 @@ object DietAnalyzer {
             }.trim()
         }
 
+        val detected = userAllergens.filter { allergen ->
+            label.rawText.contains(allergen, ignoreCase = true)
+        }
+
         return FitResult(
             fitsInDiet        = fits,
             remainingCalories = remCalories,
@@ -29,6 +33,7 @@ object DietAnalyzer {
             remainingCarbsG   = remCarbs,
             remainingFatG     = remFat,
             message           = message,
+            allergenWarnings  = detected,
         )
     }
 }

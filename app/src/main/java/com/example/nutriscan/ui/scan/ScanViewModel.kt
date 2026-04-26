@@ -54,6 +54,8 @@ class ScanViewModel(
     private var imageCapture: ImageCapture? = null
     private var camera: Camera? = null
 
+    private var userAllergens: List<String> = emptyList()
+
     // Placeholder goals — will be replaced once user profile / Firestore is wired up
     private val placeholderGoals = UserGoals(
         dailyCalories = 2000,
@@ -61,6 +63,14 @@ class ScanViewModel(
         dailyCarbsG   = 250,
         dailyFatG     = 65,
     )
+
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            firestoreClient.getAllergensByUserId(userId).collect { allergens ->
+                userAllergens = allergens
+            }
+        }
+    }
 
     fun bindCamera(
         provider:       ProcessCameraProvider,
@@ -119,7 +129,7 @@ class ScanViewModel(
                         ScanUiState.Error("No nutrition label detected. Try again with better lighting.")
                     }
                 } else {
-                    val fitResult = DietAnalyzer.analyze(label, placeholderGoals)
+                    val fitResult = DietAnalyzer.analyze(label, placeholderGoals, userAllergens)
                     _uiState.update { ScanUiState.Results(label, fitResult) }
                     CoroutineScope(Dispatchers.IO).launch {
                         firestoreClient.insertNutritionLog(

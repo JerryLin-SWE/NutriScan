@@ -290,6 +290,10 @@ private fun ResultsSheet(
         ) {
             SheetHandle()
             FitBanner(result = result)
+            if (result.allergenWarnings.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                AllergenWarningBanner(allergens = result.allergenWarnings)
+            }
             Spacer(Modifier.height(12.dp))
             MacroRow(label = label)
             Spacer(Modifier.height(16.dp))
@@ -304,6 +308,34 @@ private fun ResultsSheet(
                 Text("Scan another", fontWeight = FontWeight.SemiBold)
             }
             Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun AllergenWarningBanner(allergens: List<String>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFFFFEBEE))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("⚠️", fontSize = 20.sp)
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(
+                text = "Allergen Warning!",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFFB71C1C)
+            )
+            Text(
+                text = "Contains: ${allergens.joinToString(", ")}",
+                fontSize = 11.sp,
+                color = Color(0xFFB71C1C)
+            )
         }
     }
 }

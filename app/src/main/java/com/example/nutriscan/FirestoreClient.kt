@@ -207,6 +207,26 @@ class FirestoreClient {
         )
     }
 
+    fun getAllergensByUserId(userId: String): Flow<List<String>> {
+        return callbackFlow {
+            db.collection(dietaryCollection)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { result ->
+                    val allergens = result.documents
+                        .firstOrNull()
+                        ?.data
+                        ?.let { (it["allergens"] as? List<*>)?.filterIsInstance<String>() }
+                        ?: emptyList()
+                    trySend(allergens)
+                }
+                .addOnFailureListener {
+                    trySend(emptyList())
+                }
+            awaitClose { }
+        }
+    }
+
     // nutrition log functions
 
     fun insertNutritionLog(log: NutritionLog): Flow<Boolean> {

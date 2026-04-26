@@ -25,4 +25,5 @@ data class FitResult(
     val remainingCarbsG:   Int,
     val remainingFatG:     Int,
     val message:           String,
+    val allergenWarnings:  List<String> = emptyList(),
 )

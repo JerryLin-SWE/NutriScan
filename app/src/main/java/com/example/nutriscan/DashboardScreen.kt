@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -76,16 +78,34 @@ fun DashboardScreen(
     Scaffold(
         containerColor = NutriBackground,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToScan,
-                shape = CircleShape,
-                containerColor = CardTeal
+            Box(
+                modifier = Modifier.fillMaxSize()
             ) {
-                Image(
-                    painter = painterResource(R.drawable.camera),
-                    contentDescription = "Camera Icon",
-                    modifier = Modifier.size(40.dp)
-                )
+                // Logout button - pinned bottom right
+                Button(
+                    onClick = { onLogout() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 16.dp, end = 16.dp)
+                ) {
+                    Text("Log Out", color = Color.White)
+                }
+
+                // Camera FAB - centered at bottom
+                FloatingActionButton(
+                    onClick = onNavigateToScan,
+                    shape = CircleShape,
+                    containerColor = CardTeal,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.camera),
+                        contentDescription = "Camera Icon",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
             }
         },
         floatingActionButtonPosition = androidx.compose.material3.FabPosition.Center

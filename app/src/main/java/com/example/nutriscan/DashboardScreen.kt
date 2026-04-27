@@ -1,6 +1,7 @@
 package com.example.nutriscan
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,7 +81,11 @@ fun DashboardScreen(
                 shape = CircleShape,
                 containerColor = CardTeal
             ) {
-                Text(text = "📷", fontSize = 22.sp)
+                Image(
+                    painter = painterResource(R.drawable.camera),
+                    contentDescription = "Camera Icon",
+                    modifier = Modifier.size(40.dp)
+                )
             }
         },
         floatingActionButtonPosition = androidx.compose.material3.FabPosition.Center

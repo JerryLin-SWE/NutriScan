@@ -229,17 +229,15 @@ class FirestoreClient {
 
     fun getDailyLogs(userId: String, startOfDay: Long, endOfDay: Long): Flow<List<NutritionLog>> {
         return callbackFlow {
-            db.collection("nutritionLogs")
+            val listener = db.collection("nutritionLogs")
                 .whereEqualTo("userId", userId)
                 .whereGreaterThanOrEqualTo("timestamp", startOfDay)
                 .whereLessThanOrEqualTo("timestamp", endOfDay)
-                .get()
-                .addOnSuccessListener { result ->
-                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
-                    trySend(logs)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) { println("$tag getDailyLogs error: ${error.message}"); return@addSnapshotListener }
+                    trySend(snapshot?.documents?.mapNotNull { it.data?.toNutritionLog() } ?: emptyList())
                 }
-                .addOnFailureListener { trySend(emptyList()) }
-            awaitClose { }
+            awaitClose { listener.remove() }
         }
     }
 
@@ -265,19 +263,14 @@ class FirestoreClient {
     fun getWeeklyLogs(userId: String): Flow<List<NutritionLog>> {
         return callbackFlow {
             val oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
-            db.collection("nutritionLogs")
+            val listener = db.collection("nutritionLogs")
                 .whereEqualTo("userId", userId)
                 .whereGreaterThanOrEqualTo("timestamp", oneWeekAgo)
-                .get()
-                .addOnSuccessListener { result ->
-                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
-                    trySend(logs)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) { println("$tag getWeeklyLogs error: ${error.message}"); return@addSnapshotListener }
+                    trySend(snapshot?.documents?.mapNotNull { it.data?.toNutritionLog() } ?: emptyList())
                 }
-                .addOnFailureListener { e ->
-                    e.printStackTrace()
-                    trySend(emptyList())
-                }
-            awaitClose { }
+            awaitClose { listener.remove() }
         }
     }
 

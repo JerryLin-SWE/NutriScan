@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -71,8 +72,8 @@ fun DashboardScreen(
         val startYesterday = startToday - 86400000L
         val endYesterday = startToday - 1L
 
-        firestoreClient.getDailyLogs(userId, startToday, endToday).collect { todayLogs = it }
-        firestoreClient.getDailyLogs(userId, startYesterday, endYesterday).collect { yesterdayLogs = it }
+        launch { firestoreClient.getDailyLogs(userId, startToday, endToday).collect { todayLogs = it } }
+        launch { firestoreClient.getDailyLogs(userId, startYesterday, endYesterday).collect { yesterdayLogs = it } }
     }
 
     Scaffold(

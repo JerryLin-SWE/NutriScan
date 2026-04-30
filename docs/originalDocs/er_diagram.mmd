@@ -1,0 +1,35 @@
+erDiagram
+    USER {
+        string userId PK
+        string firstName
+        string lastName
+        string email
+    }
+
+    DIETARY {
+        string dietaryId PK
+        string userId FK
+        int age
+        int weight
+        string metricUnit
+        int activityLevel
+        list goals
+        list allergens
+        list diets
+    }
+
+    NUTRITION_LOG {
+        string logId PK
+        string userId FK
+        string productName
+        int calories
+        int proteinG
+        int carbsG
+        int fatG
+        int sugarG
+        int waterMl
+        long timestamp
+    }
+
+    USER ||--o{ DIETARY : "has"
+    USER ||--o{ NUTRITION_LOG : "scans"

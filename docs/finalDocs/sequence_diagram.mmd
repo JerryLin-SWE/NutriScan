@@ -1,0 +1,78 @@
+sequenceDiagram
+    actor User
+    participant App as AppNavigation
+    participant Auth as AuthRepository
+    participant Firebase as Firebase Auth
+    participant Firestore as FirestoreClient
+    participant OVM as OnboardingViewModel
+    participant Dashboard as DashboardScreen
+    participant Scan as ScanScreen
+    participant VM as ScanViewModel
+    participant Parser as NutritionParser
+    participant Analyzer as DietAnalyzer
+    participant AI as GeminiClient
+
+    Note over User,App: App Launch
+    User->>App: Open app
+    App->>Auth: check currentUser
+    alt Already logged in
+        App->>Dashboard: navigate to dashboard
+    else Not logged in
+        App->>App: navigate to welcome
+    end
+
+    Note over User,Firestore: Registration & Onboarding
+    User->>App: Register (email, password)
+    App->>Auth: register(email, password)
+    Auth->>Firebase: createUserWithEmailAndPassword()
+    Firebase-->>Auth: UID
+    App->>Firestore: insertUser(User)
+    App->>App: navigate to onboarding_path (nested nav)
+
+    Note over User,OVM: Onboarding (3-step shared ViewModel)
+    User->>OVM: enter age, weight, unit, activityLevel (OnboardingScreen)
+    App->>App: navigate to GoalsScreen
+    User->>OVM: toggleGoal() (GoalsScreen)
+    App->>App: navigate to DietaryScreen
+    User->>OVM: toggleAllergen(), toggleDiet() (DietaryScreen)
+    OVM->>OVM: buildDietary(userId)
+    DietaryScreen->>Firestore: insertDietary(Dietary)
+    App->>Dashboard: navigate to dashboard
+
+    Note over User,Firestore: Dashboard Load
+    Dashboard->>Firestore: getWeeklyLogs(userId)
+    Firestore-->>Dashboard: List~NutritionLog~ (pantry / weekly history)
+    Dashboard->>Firestore: getDailyLogs(userId, startOfToday, endOfToday)
+    Firestore-->>Dashboard: today's logs
+    Dashboard->>Firestore: getDailyLogs(userId, startOfYesterday, endOfYesterday)
+    Firestore-->>Dashboard: yesterday's logs
+    Dashboard-->>User: show pantry + stat cards with real data
+
+    Note over User,AI: Scanning a Label
+    User->>Dashboard: tap camera FAB
+    Dashboard->>Scan: navigate to scan
+    Scan->>VM: initialize ScanViewModel (via ScanViewModelFactory)
+    VM->>Firestore: getDietaryByUserId(userId)
+    Firestore-->>VM: Dietary (allergens, goals, diets extracted)
+    User->>Scan: point camera at label, tap Scan
+    VM->>VM: captureAndScan()
+    VM->>Parser: parse(rawText)
+    Parser-->>VM: NutritionLabel? (null → show Error state)
+    VM->>Analyzer: analyze(label, placeholderGoals, userAllergens)
+    Analyzer-->>VM: FitResult (fitsInDiet, allergenWarnings)
+    VM-->>Scan: ScanUiState.Results (label, fitResult, aiOverview="")
+    Scan-->>User: show nutrition results immediately
+    VM->>AI: getNutritionOverview(label, goals, allergens, diets)
+    AI-->>VM: 2-3 sentence plain-text overview
+    VM-->>Scan: ScanUiState.Results updated with aiOverview
+    Scan-->>User: AI overview text appears
+
+    Note over User,Firestore: Saving to Pantry
+    User->>Scan: type product name, tap Save to Pantry
+    Scan->>VM: saveLog(label, productName)
+    VM->>Firestore: insertNutritionLog(NutritionLog)
+    Firestore-->>VM: success
+    User->>Scan: tap back
+    Scan->>Dashboard: popBackStack
+    Dashboard->>Firestore: snapshot listener updates automatically
+    Dashboard-->>User: pantry updated with new item

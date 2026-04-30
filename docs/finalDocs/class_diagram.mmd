@@ -1,0 +1,235 @@
+classDiagram
+    %% UI Layer
+    class MainActivity {
+        +onCreate()
+    }
+
+    class AppNavigation {
+        +authRepository: AuthRepository
+        +firestoreClient: FirestoreClient
+        +navController: NavController
+    }
+
+    class DashboardScreen {
+        +onLogout()
+        +onNavigateToScan()
+        +firestoreClient: FirestoreClient
+        +userId: String
+    }
+
+    class ScanScreen {
+        +onNavigateBack()
+        +firestoreClient: FirestoreClient
+        +userId: String
+        +viewModel: ScanViewModel
+    }
+
+    class OnboardingScreen
+    class GoalsScreen
+    class DietaryScreen
+    class LoginScreen
+    class RegisterScreen
+    class WelcomeScreen
+
+    %% ViewModels
+    class ScanViewModel {
+        -firestoreClient: FirestoreClient
+        -userId: String
+        -userAllergens: List~String~
+        -userGoalsList: List~String~
+        -userDiets: List~String~
+        -placeholderGoals: UserGoals
+        -geminiClient: GeminiClient
+        +uiState: StateFlow~ScanUiState~
+        +bindCamera()
+        +captureAndScan()
+        +saveLog(label, productName)
+        +resetToIdle()
+    }
+
+    class ScanViewModelFactory {
+        +create()
+    }
+
+    class OnboardingViewModel {
+        +availableGoals: List~String~
+        +availableAllergens: List~String~
+        +availableDiets: List~String~
+        +selectedGoals: List~String~
+        +selectedAllergens: List~String~
+        +selectedDiets: List~String~
+        +age: String
+        +weight: String
+        +isMetric: Boolean
+        +activityLevel: Int
+        +toggleGoal(goal)
+        +toggleAllergen(allergen)
+        +toggleDiet(diet)
+        +updateActivityLevel(level)
+        +buildDietary(userId) Dietary
+    }
+
+    %% Business Logic
+    class NutritionParser {
+        +parse(rawText: String) NutritionLabel?
+        -firstMatch(patterns, text) Int?
+    }
+
+    class DietAnalyzer {
+        +analyze(label, goals, allergens) FitResult
+    }
+
+    class GeminiClient {
+        -apiKey: String
+        +getNutritionOverview(label, goals, allergens, diets) String
+        -buildPrompt(label, goals, allergens, diets) String
+    }
+
+    %% ScanUiState sealed interface
+    class ScanUiState {
+        <<sealed interface>>
+    }
+    class Idle
+    class Scanning
+    class Error {
+        +message: String
+    }
+    class Results {
+        +label: NutritionLabel
+        +result: FitResult
+        +aiOverview: String
+    }
+
+    %% Data Layer
+    class AuthRepository {
+        +currentUser: FirebaseUser
+        +uid: String
+        +isLoggedIn() Boolean
+        +login(email, password) Boolean
+        +register(email, password) Boolean
+        +logout()
+    }
+
+    class FirestoreClient {
+        +insertUser(user) Flow~Boolean~
+        +updateUser(user) Flow~Boolean~
+        +getUser(uid) Flow~User?~
+        +insertDietary(dietary) Flow~Boolean~
+        +updateDietary(dietary) Flow~Boolean~
+        +getDietary(dietaryId) Flow~Dietary?~
+        +getDietaryByUserId(userId) Flow~Dietary?~
+        +getAllergensByUserId(userId) Flow~List~String~~
+        +insertNutritionLog(log) Flow~Boolean~
+        +getWeeklyLogs(userId) Flow~List~NutritionLog~~
+        +getDailyLogs(userId, startOfDay, endOfDay) Flow~List~NutritionLog~~
+    }
+
+    %% Models
+    class User {
+        +userId: String
+        +firstName: String
+        +lastName: String
+        +email: String
+    }
+
+    class Dietary {
+        +dietaryId: String
+        +userId: String
+        +age: Int
+        +weight: Int
+        +metricUnit: String
+        +activityLevel: Int
+        +goals: List~String~
+        +allergens: List~String~
+        +diets: List~String~
+    }
+
+    class NutritionLog {
+        +logId: String
+        +userId: String
+        +productName: String
+        +calories: Int
+        +proteinG: Int
+        +carbsG: Int
+        +fatG: Int
+        +sugarG: Int
+        +waterMl: Int
+        +timestamp: Long
+    }
+
+    class NutritionLabel {
+        +calories: Int
+        +proteinG: Int
+        +carbsG: Int
+        +fatG: Int
+        +sugarG: Int
+        +waterMl: Int
+        +servingSize: String
+        +rawText: String
+    }
+
+    class FitResult {
+        +fitsInDiet: Boolean
+        +remainingCalories: Int
+        +remainingProteinG: Int
+        +remainingCarbsG: Int
+        +remainingFatG: Int
+        +message: String
+        +allergenWarnings: List~String~
+    }
+
+    class UserGoals {
+        +dailyCalories: Int
+        +dailyProteinG: Int
+        +dailyCarbsG: Int
+        +dailyFatG: Int
+    }
+
+    %% Relationships
+    MainActivity --> AppNavigation : hosts
+    AppNavigation --> DashboardScreen : navigates to
+    AppNavigation --> ScanScreen : navigates to
+    AppNavigation --> LoginScreen : navigates to
+    AppNavigation --> RegisterScreen : navigates to
+    AppNavigation --> OnboardingScreen : navigates to
+    AppNavigation --> GoalsScreen : navigates to
+    AppNavigation --> DietaryScreen : navigates to
+    AppNavigation --> WelcomeScreen : navigates to
+    AppNavigation --> AuthRepository : uses
+    AppNavigation --> FirestoreClient : uses
+
+    ScanScreen --> ScanViewModel : uses
+    ScanViewModelFactory --> ScanViewModel : creates
+    ScanViewModel --> FirestoreClient : uses
+    ScanViewModel --> NutritionParser : uses
+    ScanViewModel --> DietAnalyzer : uses
+    ScanViewModel --> GeminiClient : uses
+    ScanViewModel --> ScanUiState : emits
+
+    ScanUiState <|-- Idle
+    ScanUiState <|-- Scanning
+    ScanUiState <|-- Error
+    ScanUiState <|-- Results
+
+    Results --> NutritionLabel : contains
+    Results --> FitResult : contains
+
+    GoalsScreen --> OnboardingViewModel : uses
+    OnboardingScreen --> OnboardingViewModel : uses
+    DietaryScreen --> OnboardingViewModel : uses
+    DietaryScreen --> FirestoreClient : uses
+    DietaryScreen --> AuthRepository : uses
+
+    DashboardScreen --> FirestoreClient : fetches logs
+
+    NutritionParser ..> NutritionLabel : creates
+    DietAnalyzer ..> FitResult : creates
+    DietAnalyzer --> NutritionLabel : analyzes
+    DietAnalyzer --> UserGoals : uses
+
+    OnboardingViewModel ..> Dietary : builds
+
+    FirestoreClient ..> User : manages
+    FirestoreClient ..> Dietary : manages
+    FirestoreClient ..> NutritionLog : manages
+    AuthRepository ..> User : authenticates

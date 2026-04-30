@@ -207,6 +207,19 @@ class FirestoreClient {
         )
     }
 
+    fun getDietaryByUserId(userId: String): Flow<Dietary?> {
+        return callbackFlow {
+            db.collection(dietaryCollection)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { result ->
+                    trySend(result.documents.firstOrNull()?.data?.toDietary())
+                }
+                .addOnFailureListener { trySend(null) }
+            awaitClose { }
+        }
+    }
+
     fun getAllergensByUserId(userId: String): Flow<List<String>> {
         return callbackFlow {
             db.collection(dietaryCollection)

@@ -118,9 +118,10 @@ fun ScanScreen(
                 val results = uiState as? ScanUiState.Results
                 if (results != null) {
                     ResultsSheet(
-                        label    = results.label,
-                        result   = results.result,
-                        onReset  = viewModel::resetToIdle,
+                        label      = results.label,
+                        result     = results.result,
+                        aiOverview = results.aiOverview,
+                        onReset    = viewModel::resetToIdle,
                         onSaveWithName = { name -> viewModel.saveLog(results.label, name) }
                     )
                 }
@@ -278,9 +279,10 @@ private fun IdleSheet(
 
 @Composable
 private fun ResultsSheet(
-    label:   NutritionLabel,
-    result:  FitResult,
-    onReset: () -> Unit,
+    label:      NutritionLabel,
+    result:     FitResult,
+    aiOverview: String = "",
+    onReset:    () -> Unit,
     onSaveWithName: (String) -> Unit = {},
 ) {
     var productName by remember { mutableStateOf("") }
@@ -300,6 +302,10 @@ private fun ResultsSheet(
             if (result.allergenWarnings.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 AllergenWarningBanner(allergens = result.allergenWarnings)
+            }
+            if (aiOverview.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                AiOverviewCard(text = aiOverview)
             }
             Spacer(Modifier.height(12.dp))
             MacroRow(label = label)
@@ -334,6 +340,27 @@ private fun ResultsSheet(
             }
             Spacer(Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+private fun AiOverviewCard(text: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFFE8F5E9))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text("🤖", fontSize = 18.sp)
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = text,
+            fontSize = 12.sp,
+            color = Color(0xFF2E7D32),
+            lineHeight = 18.sp
+        )
     }
 }
 

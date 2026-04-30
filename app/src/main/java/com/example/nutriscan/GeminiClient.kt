@@ -17,21 +17,22 @@ class GeminiClient(private val apiKey: String) {
         allergens: List<String>,
         diets: List<String>
     ): String = withContext(Dispatchers.IO) {
-        val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey")
+        val url = URL("https://api.openai.com/v1/chat/completions")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Authorization", "Bearer $apiKey")
         connection.doOutput = true
         connection.connectTimeout = 10000
         connection.readTimeout = 15000
 
-        val prompt = buildPrompt(label, goals, allergens, diets)
         val body = JSONObject().apply {
-            put("contents", JSONArray().apply {
+            put("model", "gpt-4o-mini")
+            put("max_tokens", 150)
+            put("messages", JSONArray().apply {
                 put(JSONObject().apply {
-                    put("parts", JSONArray().apply {
-                        put(JSONObject().apply { put("text", prompt) })
-                    })
+                    put("role", "user")
+                    put("content", buildPrompt(label, goals, allergens, diets))
                 })
             })
         }.toString()
@@ -43,17 +44,16 @@ class GeminiClient(private val apiKey: String) {
             connection.inputStream.bufferedReader().readText()
         else
             connection.errorStream?.bufferedReader()?.readText() ?: ""
-        println("GEMINI_RAW($code): $response")
+
         if (code == 200) {
             JSONObject(response)
-                .getJSONArray("candidates")
+                .getJSONArray("choices")
                 .getJSONObject(0)
-                .getJSONObject("content")
-                .getJSONArray("parts")
-                .getJSONObject(0)
-                .getString("text")
+                .getJSONObject("message")
+                .getString("content")
                 .trim()
         } else {
+            println("OpenAI error($code): $response")
             ""
         }
     }

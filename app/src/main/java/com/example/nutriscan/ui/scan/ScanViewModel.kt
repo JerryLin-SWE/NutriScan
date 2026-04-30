@@ -61,7 +61,7 @@ class ScanViewModel(
     private var userGoalsList: List<String> = emptyList()
     private var userDiets: List<String> = emptyList()
 
-    private val geminiClient by lazy { GeminiClient(BuildConfig.GEMINI_API_KEY) }
+    private val geminiClient by lazy { GeminiClient(BuildConfig.OPENAI_API_KEY) }
 
     private val placeholderGoals = UserGoals(
         dailyCalories = 2000,
@@ -141,13 +141,8 @@ class ScanViewModel(
                     _uiState.update { ScanUiState.Results(label, fitResult) }
                     CoroutineScope(Dispatchers.IO).launch {
                         val overview = try {
-                            val r = geminiClient.getNutritionOverview(label, userGoalsList, userAllergens, userDiets)
-                            println("GEMINI_RESULT: $r")
-                            r
-                        } catch (e: Exception) {
-                            println("GEMINI_ERROR: ${e.message}")
-                            ""
-                        }
+                            geminiClient.getNutritionOverview(label, userGoalsList, userAllergens, userDiets)
+                        } catch (e: Exception) { "" }
                         _uiState.update { current ->
                             if (current is ScanUiState.Results) current.copy(aiOverview = overview) else current
                         }

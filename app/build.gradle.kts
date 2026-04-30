@@ -22,6 +22,10 @@ android {
             localPropsFile.readLines().find { it.startsWith("GEMINI_API_KEY=") }?.substringAfter("=") ?: ""
         else ""
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+        val openAiKey = if (localPropsFile.exists())
+            localPropsFile.readLines().find { it.startsWith("OPENAI_API_KEY=") }?.substringAfter("=")?.trim('"') ?: ""
+        else ""
+        buildConfigField("String", "OPENAI_API_KEY", "\"$openAiKey\"")
     }
 
     buildTypes {

@@ -17,7 +17,7 @@ class GeminiClient(private val apiKey: String) {
         allergens: List<String>,
         diets: List<String>
     ): String = withContext(Dispatchers.IO) {
-        val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey")
+        val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.setRequestProperty("Content-Type", "application/json")
@@ -38,8 +38,13 @@ class GeminiClient(private val apiKey: String) {
 
         OutputStreamWriter(connection.outputStream).use { it.write(body) }
 
-        if (connection.responseCode == 200) {
-            val response = connection.inputStream.bufferedReader().readText()
+        val code = connection.responseCode
+        val response = if (code == 200)
+            connection.inputStream.bufferedReader().readText()
+        else
+            connection.errorStream?.bufferedReader()?.readText() ?: ""
+        println("GEMINI_RAW($code): $response")
+        if (code == 200) {
             JSONObject(response)
                 .getJSONArray("candidates")
                 .getJSONObject(0)

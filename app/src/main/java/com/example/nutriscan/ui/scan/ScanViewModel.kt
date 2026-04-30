@@ -141,8 +141,13 @@ class ScanViewModel(
                     _uiState.update { ScanUiState.Results(label, fitResult) }
                     CoroutineScope(Dispatchers.IO).launch {
                         val overview = try {
-                            geminiClient.getNutritionOverview(label, userGoalsList, userAllergens, userDiets)
-                        } catch (e: Exception) { "" }
+                            val r = geminiClient.getNutritionOverview(label, userGoalsList, userAllergens, userDiets)
+                            println("GEMINI_RESULT: $r")
+                            r
+                        } catch (e: Exception) {
+                            println("GEMINI_ERROR: ${e.message}")
+                            ""
+                        }
                         _uiState.update { current ->
                             if (current is ScanUiState.Results) current.copy(aiOverview = overview) else current
                         }

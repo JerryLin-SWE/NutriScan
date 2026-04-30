@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -286,6 +287,39 @@ private fun ResultsSheet(
     onSaveWithName: (String) -> Unit = {},
 ) {
     var productName by remember { mutableStateOf("") }
+    var showAiDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(aiOverview) {
+        if (aiOverview.isNotBlank()) showAiDialog = true
+    }
+
+    if (showAiDialog && aiOverview.isNotBlank()) {
+        AlertDialog(
+            onDismissRequest = { showAiDialog = false },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🤖", fontSize = 22.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("AI Nutrition Overview", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            },
+            text = {
+                Text(aiOverview, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF333333))
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showAiDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00897B)),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Got it!", fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+        )
+    }
 
     Surface(
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
@@ -302,10 +336,6 @@ private fun ResultsSheet(
             if (result.allergenWarnings.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 AllergenWarningBanner(allergens = result.allergenWarnings)
-            }
-            if (aiOverview.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
-                AiOverviewCard(text = aiOverview)
             }
             Spacer(Modifier.height(12.dp))
             MacroRow(label = label)
@@ -340,27 +370,6 @@ private fun ResultsSheet(
             }
             Spacer(Modifier.height(8.dp))
         }
-    }
-}
-
-@Composable
-private fun AiOverviewCard(text: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFFE8F5E9))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Text("🤖", fontSize = 18.sp)
-        Spacer(Modifier.width(10.dp))
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            color = Color(0xFF2E7D32),
-            lineHeight = 18.sp
-        )
     }
 }
 

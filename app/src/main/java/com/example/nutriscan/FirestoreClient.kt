@@ -195,15 +195,15 @@ class FirestoreClient {
     //structure for reading from the database
     private fun Map<String, Any>.toDietary(): Dietary {
         return Dietary(
-            dietaryId = this["dietaryId"] as String,
-            age = this["age"] as Int,
-            weight = this["weight"] as Int,
-            metricUnit = this["metricUnit"] as String,
-            activityLevel = this["activityLevel"] as Int,
-            goals = this["goals"] as List<String>,
-            allergens = this["allergens"] as List<String>,
-            diets = this["diets"] as List<String>,
-            userId = this["userId"] as String
+            dietaryId = this["dietaryId"] as? String ?: "",
+            age = (this["age"] as? Long)?.toInt() ?: 0,
+            weight = (this["weight"] as? Long)?.toInt() ?: 0,
+            metricUnit = this["metricUnit"] as? String ?: "",
+            activityLevel = (this["activityLevel"] as? Long)?.toInt() ?: 0,
+            goals = (this["goals"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            allergens = (this["allergens"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            diets = (this["diets"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            userId = this["userId"] as? String ?: ""
         )
     }
 

@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -118,9 +119,10 @@ fun ScanScreen(
                 val results = uiState as? ScanUiState.Results
                 if (results != null) {
                     ResultsSheet(
-                        label    = results.label,
-                        result   = results.result,
-                        onReset  = viewModel::resetToIdle,
+                        label      = results.label,
+                        result     = results.result,
+                        aiOverview = results.aiOverview,
+                        onReset    = viewModel::resetToIdle,
                         onSaveWithName = { name -> viewModel.saveLog(results.label, name) }
                     )
                 }
@@ -278,12 +280,46 @@ private fun IdleSheet(
 
 @Composable
 private fun ResultsSheet(
-    label:   NutritionLabel,
-    result:  FitResult,
-    onReset: () -> Unit,
+    label:      NutritionLabel,
+    result:     FitResult,
+    aiOverview: String = "",
+    onReset:    () -> Unit,
     onSaveWithName: (String) -> Unit = {},
 ) {
     var productName by remember { mutableStateOf("") }
+    var showAiDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(aiOverview) {
+        if (aiOverview.isNotBlank()) showAiDialog = true
+    }
+
+    if (showAiDialog && aiOverview.isNotBlank()) {
+        AlertDialog(
+            onDismissRequest = { showAiDialog = false },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🤖", fontSize = 22.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("AI Nutrition Overview", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            },
+            text = {
+                Text(aiOverview, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF333333))
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showAiDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00897B)),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Got it!", fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+        )
+    }
 
     Surface(
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),

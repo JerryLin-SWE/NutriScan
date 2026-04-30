@@ -195,16 +195,29 @@ class FirestoreClient {
     //structure for reading from the database
     private fun Map<String, Any>.toDietary(): Dietary {
         return Dietary(
-            dietaryId = this["dietaryId"] as String,
-            age = this["age"] as Int,
-            weight = this["weight"] as Int,
-            metricUnit = this["metricUnit"] as String,
-            activityLevel = this["activityLevel"] as Int,
-            goals = this["goals"] as List<String>,
-            allergens = this["allergens"] as List<String>,
-            diets = this["diets"] as List<String>,
-            userId = this["userId"] as String
+            dietaryId = this["dietaryId"] as? String ?: "",
+            age = (this["age"] as? Long)?.toInt() ?: 0,
+            weight = (this["weight"] as? Long)?.toInt() ?: 0,
+            metricUnit = this["metricUnit"] as? String ?: "",
+            activityLevel = (this["activityLevel"] as? Long)?.toInt() ?: 0,
+            goals = (this["goals"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            allergens = (this["allergens"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            diets = (this["diets"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            userId = this["userId"] as? String ?: ""
         )
+    }
+
+    fun getDietaryByUserId(userId: String): Flow<Dietary?> {
+        return callbackFlow {
+            db.collection(dietaryCollection)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { result ->
+                    trySend(result.documents.firstOrNull()?.data?.toDietary())
+                }
+                .addOnFailureListener { trySend(null) }
+            awaitClose { }
+        }
     }
 
     fun getAllergensByUserId(userId: String): Flow<List<String>> {
@@ -229,17 +242,15 @@ class FirestoreClient {
 
     fun getDailyLogs(userId: String, startOfDay: Long, endOfDay: Long): Flow<List<NutritionLog>> {
         return callbackFlow {
-            db.collection("nutritionLogs")
+            val listener = db.collection("nutritionLogs")
                 .whereEqualTo("userId", userId)
                 .whereGreaterThanOrEqualTo("timestamp", startOfDay)
                 .whereLessThanOrEqualTo("timestamp", endOfDay)
-                .get()
-                .addOnSuccessListener { result ->
-                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
-                    trySend(logs)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) { println("$tag getDailyLogs error: ${error.message}"); return@addSnapshotListener }
+                    trySend(snapshot?.documents?.mapNotNull { it.data?.toNutritionLog() } ?: emptyList())
                 }
-                .addOnFailureListener { trySend(emptyList()) }
-            awaitClose { }
+            awaitClose { listener.remove() }
         }
     }
 
@@ -265,19 +276,14 @@ class FirestoreClient {
     fun getWeeklyLogs(userId: String): Flow<List<NutritionLog>> {
         return callbackFlow {
             val oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
-            db.collection("nutritionLogs")
+            val listener = db.collection("nutritionLogs")
                 .whereEqualTo("userId", userId)
                 .whereGreaterThanOrEqualTo("timestamp", oneWeekAgo)
-                .get()
-                .addOnSuccessListener { result ->
-                    val logs = result.documents.mapNotNull { it.data?.toNutritionLog() }
-                    trySend(logs)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) { println("$tag getWeeklyLogs error: ${error.message}"); return@addSnapshotListener }
+                    trySend(snapshot?.documents?.mapNotNull { it.data?.toNutritionLog() } ?: emptyList())
                 }
-                .addOnFailureListener { e ->
-                    e.printStackTrace()
-                    trySend(emptyList())
-                }
-            awaitClose { }
+            awaitClose { listener.remove() }
         }
     }
 

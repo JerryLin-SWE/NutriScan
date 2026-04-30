@@ -16,6 +16,16 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localPropsFile = project.rootProject.file("local.properties")
+        val geminiKey = if (localPropsFile.exists())
+            localPropsFile.readLines().find { it.startsWith("GEMINI_API_KEY=") }?.substringAfter("=") ?: ""
+        else ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+        val openAiKey = if (localPropsFile.exists())
+            localPropsFile.readLines().find { it.startsWith("OPENAI_API_KEY=") }?.substringAfter("=")?.trim('"') ?: ""
+        else ""
+        buildConfigField("String", "OPENAI_API_KEY", "\"$openAiKey\"")
     }
 
     buildTypes {
@@ -36,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

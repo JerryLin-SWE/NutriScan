@@ -11,7 +11,9 @@ import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.nutriscan.BuildConfig
 import com.example.nutriscan.FirestoreClient
+import com.example.nutriscan.GeminiClient
 import com.example.nutriscan.NutritionLog
 import com.example.nutriscan.domain.DietAnalyzer
 import com.example.nutriscan.domain.FitResult
@@ -35,8 +37,9 @@ sealed interface ScanUiState {
     data object Scanning   : ScanUiState
     data class  Error(val message: String) : ScanUiState
     data class  Results(
-        val label:  NutritionLabel,
-        val result: FitResult,
+        val label:      NutritionLabel,
+        val result:     FitResult,
+        val aiOverview: String = "",
     ) : ScanUiState
 }
 
@@ -55,8 +58,11 @@ class ScanViewModel(
     private var camera: Camera? = null
 
     private var userAllergens: List<String> = emptyList()
+    private var userGoalsList: List<String> = emptyList()
+    private var userDiets: List<String> = emptyList()
 
-    // Placeholder goals — will be replaced once user profile / Firestore is wired up
+    private val geminiClient by lazy { GeminiClient(BuildConfig.OPENAI_API_KEY) }
+
     private val placeholderGoals = UserGoals(
         dailyCalories = 2000,
         dailyProteinG = 150,
@@ -66,8 +72,10 @@ class ScanViewModel(
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            firestoreClient.getAllergensByUserId(userId).collect { allergens ->
-                userAllergens = allergens
+            firestoreClient.getDietaryByUserId(userId).collect { dietary ->
+                userAllergens = dietary?.allergens ?: emptyList()
+                userGoalsList = dietary?.goals ?: emptyList()
+                userDiets = dietary?.diets ?: emptyList()
             }
         }
     }
@@ -131,6 +139,14 @@ class ScanViewModel(
                 } else {
                     val fitResult = DietAnalyzer.analyze(label, placeholderGoals, userAllergens)
                     _uiState.update { ScanUiState.Results(label, fitResult) }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val overview = try {
+                            geminiClient.getNutritionOverview(label, userGoalsList, userAllergens, userDiets)
+                        } catch (e: Exception) { "" }
+                        _uiState.update { current ->
+                            if (current is ScanUiState.Results) current.copy(aiOverview = overview) else current
+                        }
+                    }
                 }
             }
             .addOnFailureListener { e ->
